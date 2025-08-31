@@ -5,16 +5,24 @@ import (
 	"fmt"
 	"net/http"
 	"net/http/httptest"
+	"reflect"
+	"strings"
 	"testing"
 )
+
+var testData = [][]string{
+	{"<html>", "<body>", "Hello CS 272, there are no links here.", "</body>", "</html>"},
+	{"<html>", "<body>", "For a simple example, see <a href=\"/test-data/project01/simple.html\">simple.html</a>", "</body>", "</html>"},
+	{"<html>", "<head>", "  <title>Style</title>", "  <style>", "    a.blue {", "      color: blue;", "    }", "    a.red {", "      color: red;", "    }", "  </style>", "<body>", "  <p>", "    Here is a blue link to <a class=\"blue\" href=\"/test-data/project01/href.html\">href.html</a>", "  </p>", "  <p>", "    And a red link to <a class=\"red\" href=\"/test-data/project01/simple.html\">simple.html</a>", "  </p>", "</body>", "</html>"},
+}
 
 func TestDownload(t *testing.T) {
 	tests := []struct {
 		want []string
 	}{
-		{[]string{"<html>", "<body>", "Hello CS 272, there are no links here.", "</body>", "</html>"}},
-		{[]string{"<html>", "<body>", "For a simple example, see <a href=\"/test-data/project01/simple.html\">simple.html</a>", "</body>", "</html>"}},
-		{[]string{"<html>", "<head>", "  <title>Style</title>", "  <style>", "    a.blue {", "      color: blue;", "    }", "    a.red {", "      color: red;", "    }", "  </style>", "<body>", "  <p>", "    Here is a blue link to <a class=\"blue\" href=\"/test-data/project01/href.html\">href.html</a>", "  </p>", "  <p>", "    And a red link to <a class=\"red\" href=\"/test-data/project01/simple.html\">simple.html</a>", "  </p>", "</body>", "</html>"}},
+		{testData[0]},
+		{testData[1]},
+		{testData[2]},
 	}
 
 	for testIdx, test := range tests {
@@ -35,6 +43,29 @@ func TestDownload(t *testing.T) {
 			if textGot != textWant {
 				t.Errorf("For test %d at line %d, got \"%s\" but wanted \"%s\"\n", testIdx, i, textGot, textWant)
 			}
+		}
+	}
+}
+
+func TestExtract(t *testing.T) {
+	tests := []struct {
+		wantWords, wantHrefs []string
+	}{
+		{[]string{"Hello", "CS", "272", "there", "are", "no", "links", "here"}, []string{}},
+		{[]string{"For", "a", "simple", "example", "see", "simple", "html"}, []string{"/test-data/project01/simple.html"}},
+		{[]string{"Here", "is", "a", "blue", "link", "to", "href", "html", "And", "a", "red", "link", "to", "simple", "html"}, []string{"/test-data/project01/href.html", "/test-data/project01/simple.html"}},
+	}
+
+	for testIdx, test := range tests {
+		testFileStr := strings.Join(testData[testIdx], "\n")
+		stringsReader := strings.NewReader(testFileStr)
+		bufioReader := bufio.NewReader(stringsReader)
+		gotWords, gotHrefs := extract(bufioReader)
+		if !reflect.DeepEqual(gotWords, test.wantWords) {
+			t.Errorf("For test %d, got words [%s] but wanted [%s]\n", testIdx, strings.Join(gotWords, ", "), strings.Join(test.wantWords, ", "))
+		}
+		if !reflect.DeepEqual(gotHrefs, test.wantHrefs) {
+			t.Errorf("For test %d, got hrefs [%s] but wanted [%s]\n", testIdx, strings.Join(gotHrefs, ", "), strings.Join(test.wantHrefs, ", "))
 		}
 	}
 }

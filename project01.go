@@ -25,13 +25,13 @@ func download(url string) io.ReadCloser {
 	return resp.Body
 }
 
-/* Extracts the words and hrefs from the contents of a website represented as a Reader, returning them as 2 slices */
-func extract(reader *bufio.Reader) ([]string, []string) {
+/* Extracts the words and hrefs from the contents of a website represented as a Reader, returning them as 2 maps (to avoid duplicates) */
+func extract(reader *bufio.Reader) (map[string]struct{}, map[string]struct{}) {
 	tree, err := html.Parse(reader)
 	checkErr(err)
 
-	words := make([]string, 0)
-	hrefs := make([]string, 0)
+	words := make(map[string]struct{})
+	hrefs := make(map[string]struct{})
 	isVisibleText := true
 	for node := range tree.Descendants() {
 		if node.Type == html.ElementNode {
@@ -41,16 +41,17 @@ func extract(reader *bufio.Reader) ([]string, []string) {
 			continue
 		}
 		if node.Type == html.TextNode {
-			extractWords(node, &words)
+			extractWords(node, words)
 		} else if node.Type == html.ElementNode && node.DataAtom == atom.A {
-			extractHrefs(node, &hrefs)
+			extractHrefs(node, hrefs)
 		}
 	}
 	return words, hrefs
 }
 
-/* Extracts words from the given text node and appends them to the given words slice */
-func extractWords(node *html.Node, words *[]string) {
+/* Extracts words from the given text node and adds them to the given words set */
+func extractWords(node *html.Node, words map[string]struct{}) {
+	// Verify that the node is a text node
 	if node.Type != html.TextNode {
 		panic("Invalid node")
 	}
@@ -59,19 +60,21 @@ func extractWords(node *html.Node, words *[]string) {
 		return !unicode.IsLetter(c) && !unicode.IsNumber(c)
 	}
 	newWords := strings.FieldsFunc(node.Data, delimiterFunc)
-	*words = append(*words, newWords...)
+	for _, word := range newWords {
+		words[word] = struct{}{}
+	}
 }
 
-/* Extracts href attributes from the given anchor node and appends them to the given hrefs slice */
-func extractHrefs(node *html.Node, hrefs *[]string) {
-	// Check if node is an anchor element node
+/* Extracts href attributes from the given anchor node and adds them to the given hrefs set */
+func extractHrefs(node *html.Node, hrefs map[string]struct{}) {
+	// Verify that the node is an anchor element node
 	if node.Type != html.ElementNode || node.DataAtom != atom.A {
 		panic("Invalid node")
 	}
 
 	for _, attribute := range node.Attr {
 		if attribute.Key == "href" {
-			*hrefs = append(*hrefs, attribute.Val)
+			hrefs[attribute.Val] = struct{}{}
 			break
 		}
 	}
@@ -96,9 +99,9 @@ func cleanHref(base string, href string) string {
 }
 
 /* Calls cleanHref() on each of the given hrefs and returns the cleaned hrefs in a slice */
-func cleanHrefs(base string, hrefs []string) []string {
+func cleanHrefs(base string, hrefs map[string]struct{}) []string {
 	cleaned := make([]string, 0, len(hrefs))
-	for _, href := range hrefs {
+	for href := range hrefs {
 		cleaned = append(cleaned, cleanHref(base, href))
 	}
 	return cleaned
@@ -122,7 +125,7 @@ func crawl(seed string) []string {
 		defer body.Close()
 
 		reader := bufio.NewReader(body)
-		_, hrefs := extract(reader)
+		_, hrefs := extract(reader) // not doing anything with words for now
 		host := extractHost(url)
 		cleanedHrefs := cleanHrefs(host, hrefs)
 
@@ -138,5 +141,5 @@ func crawl(seed string) []string {
 }
 
 func main() {
-	crawl("https://usf-cs272-f25.github.io/test-data/project01/")
+	crawl("https://usf-cs272-f25.github.io/")
 }

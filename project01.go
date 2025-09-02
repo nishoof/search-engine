@@ -5,6 +5,7 @@ import (
 	"fmt"
 	"io"
 	"net/http"
+	"net/url"
 	"strings"
 	"unicode"
 
@@ -25,7 +26,7 @@ func download(url string) io.ReadCloser {
 	return resp.Body
 }
 
-/* Extracts the words and hrefs from the contents of a website represented as a Reader */
+/* Extracts the words and hrefs from the contents of a website represented as a Reader, returning them as 2 slices */
 func extract(reader *bufio.Reader) ([]string, []string) {
 	tree, err := html.Parse(reader)
 	checkErr(err)
@@ -49,7 +50,7 @@ func extract(reader *bufio.Reader) ([]string, []string) {
 	return words, hrefs
 }
 
-/* Extracts words from the given text node and adds them to the words slice */
+/* Extracts words from the given text node and appends them to the given words slice */
 func extractWords(node *html.Node, words *[]string) {
 	if node.Type != html.TextNode {
 		panic("Invalid node")
@@ -62,7 +63,7 @@ func extractWords(node *html.Node, words *[]string) {
 	*words = append(*words, newWords...)
 }
 
-/* Extracts href attributes from the given anchor node and adds them to the hrefs slice */
+/* Extracts href attributes from the given anchor node and appends them to the given hrefs slice */
 func extractHrefs(node *html.Node, hrefs *[]string) {
 	// Check if node is an anchor element node
 	if node.Type != html.ElementNode || node.DataAtom != atom.A {
@@ -77,8 +78,28 @@ func extractHrefs(node *html.Node, hrefs *[]string) {
 	}
 }
 
+/* Extracts the host from the given href */
+func extractHost(href string) string {
+	u, err := url.Parse(href)
+	checkErr(err)
+	u.Path = "/"
+	return u.String()
+}
+
+/* Cleans the given href by resolving it against the given base url */
+func cleanHref(base string, href string) string {
+	b, err := url.Parse(base)
+	checkErr(err)
+	u, err := url.Parse(href)
+	checkErr(err)
+	cleaned := b.ResolveReference(u)
+	return cleaned.String()
+}
+
 func main() {
-	body := download("https://usf-cs272-f25.github.io/test-data/project01/style.html")
+	input := "https://usf-cs272-f25.github.io/test-data/project01/style.html"
+
+	body := download(input)
 	defer body.Close()
 
 	reader := bufio.NewReader(body)
@@ -86,4 +107,10 @@ func main() {
 
 	fmt.Println("Words:", strings.Join(words, ", "))
 	fmt.Println("Hrefs:", strings.Join(hrefs, ", "))
+	fmt.Println()
+
+	host := extractHost(input)
+	for _, href := range hrefs {
+		fmt.Println(cleanHref(host, href))
+	}
 }

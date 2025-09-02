@@ -2,7 +2,6 @@ package main
 
 import (
 	"bufio"
-	"fmt"
 	"io"
 	"net/http"
 	"net/url"
@@ -96,21 +95,48 @@ func cleanHref(base string, href string) string {
 	return cleaned.String()
 }
 
-func main() {
-	input := "https://usf-cs272-f25.github.io/test-data/project01/style.html"
-
-	body := download(input)
-	defer body.Close()
-
-	reader := bufio.NewReader(body)
-	words, hrefs := extract(reader)
-
-	fmt.Println("Words:", strings.Join(words, ", "))
-	fmt.Println("Hrefs:", strings.Join(hrefs, ", "))
-	fmt.Println()
-
-	host := extractHost(input)
+/* Calls cleanHref() on each of the given hrefs and returns the cleaned hrefs in a slice */
+func cleanHrefs(base string, hrefs []string) []string {
+	cleaned := make([]string, 0, len(hrefs))
 	for _, href := range hrefs {
-		fmt.Println(cleanHref(host, href))
+		cleaned = append(cleaned, cleanHref(base, href))
 	}
+	return cleaned
+}
+
+/* Crawls the website starting from the given seed URL and returns a slice of all crawled URLs */
+func crawl(seed string) []string {
+	crawled := make([]string, 0)
+	q := make([]string, 0)
+	q = append(q, seed)
+	visitedSet := make(map[string]struct{})
+
+	for len(q) > 0 {
+		url := q[0]
+		q = q[1:]
+		visitedSet[url] = struct{}{}
+		crawled = append(crawled, url)
+		// fmt.Printf("Crawling: %s\n", url)
+
+		body := download(url)
+		defer body.Close()
+
+		reader := bufio.NewReader(body)
+		_, hrefs := extract(reader)
+		host := extractHost(url)
+		cleanedHrefs := cleanHrefs(host, hrefs)
+
+		for _, href := range cleanedHrefs {
+			_, visited := visitedSet[href]
+			if !visited {
+				q = append(q, href)
+			}
+		}
+	}
+
+	return crawled
+}
+
+func main() {
+	crawl("https://usf-cs272-f25.github.io/test-data/project01/")
 }

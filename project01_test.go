@@ -83,7 +83,28 @@ func TestCleanHref(t *testing.T) {
 	for _, test := range tests {
 		got := cleanHref(test.host, test.href)
 		if got != test.want {
-			t.Errorf("For host %q and href %q, got %q but wanted %q\n", test.host, test.href, got, test.want)
+			t.Errorf("For base %q and href %q, got %q but wanted %q\n", test.host, test.href, got, test.want)
+		}
+	}
+}
+
+func TestCrawl(t *testing.T) {
+	tests := []struct {
+		seed string
+		want []string
+	}{
+		{"https://usf-cs272-f25.github.io/test-data/project01/", []string{
+			"https://usf-cs272-f25.github.io/test-data/project01/",
+			"https://usf-cs272-f25.github.io/test-data/project01/simple.html",
+			"https://usf-cs272-f25.github.io/test-data/project01/href.html",
+			"https://usf-cs272-f25.github.io/test-data/project01/style.html",
+		}},
+	}
+
+	for _, test := range tests {
+		got := crawl(test.seed)
+		if !reflect.DeepEqual(got, test.want) {
+			t.Errorf("For seed %q, got [%s] but wanted [%s]\n", test.seed, strings.Join(got, ", "), strings.Join(test.want, ", "))
 		}
 	}
 }

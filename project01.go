@@ -2,6 +2,7 @@ package main
 
 import (
 	"bufio"
+	"fmt"
 	"io"
 	"net/http"
 	"net/url"
@@ -12,6 +13,7 @@ import (
 	"golang.org/x/net/html/atom"
 )
 
+/* Panics if err is non-nil */
 func checkErr(err error) {
 	if err != nil {
 		panic(err)
@@ -32,21 +34,22 @@ func extract(reader *bufio.Reader) (map[string]struct{}, map[string]struct{}) {
 
 	words := make(map[string]struct{})
 	hrefs := make(map[string]struct{})
-	isVisibleText := true
-	for node := range tree.Descendants() {
-		if node.Type == html.ElementNode {
-			isVisibleText = node.DataAtom != atom.Style && node.DataAtom != atom.Title
-		}
-		if !isVisibleText {
-			continue
-		}
-		if node.Type == html.TextNode {
-			extractWords(node, words)
-		} else if node.Type == html.ElementNode && node.DataAtom == atom.A {
-			extractHrefs(node, hrefs)
-		}
-	}
+	extractDfsHelper(tree, words, hrefs)
 	return words, hrefs
+}
+
+/* Does a recursive dfs on the HTML node tree, extracting words and hrefs into the given sets, and skipping nodes that we don't want (such as style) */
+func extractDfsHelper(node *html.Node, words map[string]struct{}, hrefs map[string]struct{}) {
+	if node.Type == html.TextNode {
+		extractWords(node, words)
+	} else if node.Type == html.ElementNode && node.DataAtom == atom.A {
+		extractHrefs(node, hrefs)
+	} else if node.Type == html.ElementNode && (node.DataAtom == atom.Style || node.DataAtom == atom.Title || node.DataAtom == atom.Script) {
+		return // skip the <style>, <title>, and <script> subtrees
+	}
+	for child := node.FirstChild; child != nil; child = child.NextSibling {
+		extractDfsHelper(child, words, hrefs)
+	}
 }
 
 /* Extracts words from the given text node and adds them to the given words set */
@@ -119,7 +122,7 @@ func crawl(seed string) []string {
 		q = q[1:]
 		visitedSet[url] = struct{}{}
 		crawled = append(crawled, url)
-		// fmt.Printf("Crawling: %s\n", url)
+		fmt.Printf("Crawling: %s\n", url)
 
 		body := download(url)
 		defer body.Close()
@@ -141,5 +144,5 @@ func crawl(seed string) []string {
 }
 
 func main() {
-	crawl("https://usf-cs272-f25.github.io/")
+	crawl("https://usf-cs272-f25.github.io/test-data/project01/")
 }

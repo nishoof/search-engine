@@ -13,24 +13,23 @@ import (
 	"golang.org/x/net/html/atom"
 )
 
-/* Panics if err is non-nil */
-func checkErr(err error) {
-	if err != nil {
-		panic(err)
-	}
-}
-
 /* Downloads the contents of the website of the given url and returns a ReadCloser on it */
 func download(url string) io.ReadCloser {
 	resp, err := http.Get(url)
-	checkErr(err)
+	if err != nil {
+		fmt.Printf("Error downloading %q: %v\n", url, err)
+		return nil
+	}
 	return resp.Body
 }
 
 /* Extracts the words and hrefs from the contents of a website represented as a Reader, returning them as 2 maps (to avoid duplicates) */
 func extract(reader *bufio.Reader) (map[string]struct{}, map[string]struct{}) {
 	tree, err := html.Parse(reader)
-	checkErr(err)
+	if err != nil {
+		fmt.Printf("Error parsing HTML: %v\n", err)
+		return nil, nil
+	}
 
 	words := make(map[string]struct{})
 	hrefs := make(map[string]struct{})
@@ -87,7 +86,10 @@ func extractHrefs(node *html.Node, hrefs map[string]struct{}) {
 /* Extracts the host from the given href */
 func extractHost(href string) string {
 	u, err := url.Parse(href)
-	checkErr(err)
+	if err != nil {
+		fmt.Printf("Error parsing href %q: %v\n", href, err)
+		return ""
+	}
 	u.Path = "/"
 	return u.String()
 }
@@ -95,20 +97,29 @@ func extractHost(href string) string {
 /* Cleans the given href by resolving it against the given base url */
 func cleanHref(base string, href string) string {
 	b, err := url.Parse(base)
-	checkErr(err)
+	if err != nil {
+		fmt.Printf("Error parsing base URL %q: %v\n", base, err)
+		return ""
+	}
 	u, err := url.Parse(href)
-	checkErr(err)
+	if err != nil {
+		fmt.Printf("Error parsing href URL %q: %v\n", href, err)
+		return ""
+	}
 	cleaned := b.ResolveReference(u)
 	return cleaned.String()
 }
 
 /* Calls cleanHref() on each of the given hrefs and returns the cleaned hrefs in a slice */
 func cleanHrefs(base string, hrefs map[string]struct{}) []string {
-	cleaned := make([]string, 0, len(hrefs))
+	cleanedSlice := make([]string, 0, len(hrefs))
 	for href := range hrefs {
-		cleaned = append(cleaned, cleanHref(base, href))
+		clean := cleanHref(base, href)
+		if clean != "" {
+			cleanedSlice = append(cleanedSlice, clean)
+		}
 	}
-	return cleaned
+	return cleanedSlice
 }
 
 /* Crawls the website starting from the given seed URL and returns a slice of all crawled URLs */
@@ -118,6 +129,9 @@ func crawl(seed string) (map[string]struct{}, map[string]struct{}) {
 	visitedSet := make(map[string]struct{})
 	wordsSet := make(map[string]struct{})
 	host := extractHost(seed)
+	if host == "" {
+		return nil, nil
+	}
 
 	for len(q) > 0 {
 		url := q[0]
@@ -126,10 +140,16 @@ func crawl(seed string) (map[string]struct{}, map[string]struct{}) {
 		fmt.Printf("Crawling: %s\n", url)
 
 		body := download(url)
+		if body == nil {
+			continue
+		}
 		defer body.Close()
 
 		reader := bufio.NewReader(body)
 		words, hrefs := extract(reader)
+		if words == nil || hrefs == nil {
+			continue
+		}
 		cleanedHrefs := cleanHrefs(host, hrefs)
 
 		for word := range words {

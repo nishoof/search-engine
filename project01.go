@@ -112,8 +112,7 @@ func cleanHrefs(base string, hrefs map[string]struct{}) []string {
 }
 
 /* Crawls the website starting from the given seed URL and returns a slice of all crawled URLs */
-func crawl(seed string) ([]string, map[string]struct{}) {
-	crawled := make([]string, 0)
+func crawl(seed string) (map[string]struct{}, map[string]struct{}) {
 	q := make([]string, 0)
 	q = append(q, seed)
 	visitedSet := make(map[string]struct{})
@@ -124,7 +123,6 @@ func crawl(seed string) ([]string, map[string]struct{}) {
 		url := q[0]
 		q = q[1:]
 		visitedSet[url] = struct{}{}
-		crawled = append(crawled, url)
 		fmt.Printf("Crawling: %s\n", url)
 
 		body := download(url)
@@ -151,7 +149,7 @@ func crawl(seed string) ([]string, map[string]struct{}) {
 		}
 	}
 
-	return crawled, wordsSet
+	return visitedSet, wordsSet
 }
 
 func main() {

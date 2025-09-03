@@ -5,7 +5,6 @@ import (
 	"fmt"
 	"net/http"
 	"net/http/httptest"
-	"reflect"
 	"strings"
 	"testing"
 )
@@ -117,8 +116,14 @@ func TestCrawl(t *testing.T) {
 
 	for _, test := range tests {
 		got, _ := crawl(test.seed)
-		if !reflect.DeepEqual(got, test.want) {
-			t.Errorf("For seed %q, got [%s] but wanted [%s]\n", test.seed, strings.Join(got, ", "), strings.Join(test.want, ", "))
+		if len(got) != len(test.want) {
+			t.Errorf("For seed %q, got %d URLs but wanted %d\n", test.seed, len(got), len(test.want))
+		}
+		for _, v := range test.want {
+			if got[v] != struct{}{} {
+				t.Errorf("For seed %q, got %v but wanted %v\n", test.seed, got, test.want)
+				break
+			}
 		}
 	}
 }

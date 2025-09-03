@@ -118,6 +118,7 @@ func crawl(seed string) ([]string, map[string]struct{}) {
 	q = append(q, seed)
 	visitedSet := make(map[string]struct{})
 	wordsSet := make(map[string]struct{})
+	host := extractHost(seed)
 
 	for len(q) > 0 {
 		url := q[0]
@@ -130,7 +131,6 @@ func crawl(seed string) ([]string, map[string]struct{}) {
 		defer body.Close()
 
 		reader := bufio.NewReader(body)
-		host := extractHost(url)
 		words, hrefs := extract(reader)
 		cleanedHrefs := cleanHrefs(host, hrefs)
 
@@ -145,7 +145,7 @@ func crawl(seed string) ([]string, map[string]struct{}) {
 
 		for _, href := range cleanedHrefs {
 			_, visited := visitedSet[href]
-			if !visited {
+			if !visited && extractHost(href) == host {
 				q = append(q, href)
 			}
 		}

@@ -10,29 +10,53 @@ import (
 )
 
 var testData = [][]string{
+	{"<html>", "<body>", "  <ul>", "    <li>", "      <a href=\"/test-data/project01/simple.html\">simple.html</a>", "    </li>", "    <li>", "      <a href=\"/test-data/project01/href.html\">href.html</a>", "    </li>", "    <li>", "      <a href=\"/test-data/project01/style.html\">style.html</a>", "  </ul>", "</body>", "</html>"},
 	{"<html>", "<body>", "Hello CS 272, there are no links here.", "</body>", "</html>"},
 	{"<html>", "<body>", "For a simple example, see <a href=\"/test-data/project01/simple.html\">simple.html</a>", "</body>", "</html>"},
 	{"<html>", "<head>", "  <title>Style</title>", "  <style>", "    a.blue {", "      color: blue;", "    }", "    a.red {", "      color: red;", "    }", "  </style>", "<body>", "  <p>", "    Here is a blue link to <a class=\"blue\" href=\"/test-data/project01/href.html\">href.html</a>", "  </p>", "  <p>", "    And a red link to <a class=\"red\" href=\"/test-data/project01/simple.html\">simple.html</a>", "  </p>", "</body>", "</html>"},
 }
 
+var testPaths = []string{
+	"/test-data/project01",
+	"/test-data/project01/simple.html",
+	"/test-data/project01/href.html",
+	"/test-data/project01/style.html",
+}
+
+func getTestServer() *httptest.Server {
+	ts := httptest.NewServer(http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
+		fmt.Println("r.URL.Path:", r.URL.Path)
+		switch r.URL.Path {
+		case testPaths[0]:
+			http.ServeFile(w, r, "test-data/index.html")
+		case testPaths[1]:
+			http.ServeFile(w, r, "test-data/simple.html")
+		case testPaths[2]:
+			http.ServeFile(w, r, "test-data/href.html")
+		case testPaths[3]:
+			http.ServeFile(w, r, "test-data/style.html")
+		default:
+			http.NotFound(w, r)
+		}
+	}))
+	return ts
+}
+
 func TestDownload(t *testing.T) {
 	tests := []struct {
+		path string
 		want []string
 	}{
-		{testData[0]},
-		{testData[1]},
-		{testData[2]},
+		{testPaths[0], testData[0]},
+		{testPaths[1], testData[1]},
+		{testPaths[2], testData[2]},
 	}
 
-	for testIdx, test := range tests {
-		// Create a test HTTP server that serves the expected HTML
-		testServer := httptest.NewServer(http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
-			for _, v := range test.want {
-				fmt.Fprintln(w, v)
-			}
-		}))
+	ts := getTestServer()
+	defer ts.Close()
 
-		got := download(testServer.URL)
+	for testIdx, test := range tests {
+		got := download(ts.URL + test.path)
 
 		// Read through the downloaded content line by line with a scanner and compare it to expected
 		scanner := bufio.NewScanner(got)
@@ -48,15 +72,15 @@ func TestDownload(t *testing.T) {
 
 func TestExtract(t *testing.T) {
 	tests := []struct {
-		wantWords, wantHrefs []string
+		testData, wantWords, wantHrefs []string
 	}{
-		{[]string{"Hello", "CS", "272", "there", "are", "no", "links", "here"}, []string{}},
-		{[]string{"For", "a", "simple", "example", "see", "html"}, []string{"/test-data/project01/simple.html"}},
-		{[]string{"Here", "is", "a", "blue", "link", "to", "href", "html", "And", "red", "simple"}, []string{"/test-data/project01/href.html", "/test-data/project01/simple.html"}},
+		{testData[1], []string{"Hello", "CS", "272", "there", "are", "no", "links", "here"}, []string{}},
+		{testData[2], []string{"For", "a", "simple", "example", "see", "html"}, []string{"/test-data/project01/simple.html"}},
+		{testData[3], []string{"Here", "is", "a", "blue", "link", "to", "href", "html", "And", "red", "simple"}, []string{"/test-data/project01/href.html", "/test-data/project01/simple.html"}},
 	}
 
 	for testIdx, test := range tests {
-		testFileStr := strings.Join(testData[testIdx], "\n")
+		testFileStr := strings.Join(test.testData, "\n")
 		stringsReader := strings.NewReader(testFileStr)
 		bufioReader := bufio.NewReader(stringsReader)
 		gotWords, gotHrefs := extract(bufioReader)
@@ -106,24 +130,31 @@ func TestCrawl(t *testing.T) {
 		seed string
 		want []string
 	}{
-		{"https://usf-cs272-f25.github.io/test-data/project01/", []string{
-			"https://usf-cs272-f25.github.io/test-data/project01/",
-			"https://usf-cs272-f25.github.io/test-data/project01/simple.html",
-			"https://usf-cs272-f25.github.io/test-data/project01/href.html",
-			"https://usf-cs272-f25.github.io/test-data/project01/style.html",
+		{testPaths[0], []string{
+			testPaths[0],
+			testPaths[1],
+			testPaths[2],
+			testPaths[3],
 		}},
 	}
 
+	ts := getTestServer()
+	defer ts.Close()
+
 	for _, test := range tests {
-		got, _ := crawl(test.seed)
+		got, _ := crawl(ts.URL + test.seed)
 		if len(got) != len(test.want) {
 			t.Errorf("For seed %q, got %d URLs but wanted %d\n", test.seed, len(got), len(test.want))
 		}
+		count := 0
 		for _, v := range test.want {
-			if got[v] != struct{}{} {
-				t.Errorf("For seed %q, got %v but wanted %v\n", test.seed, got, test.want)
-				break
+			_, exists := got[ts.URL+v]
+			if exists {
+				count++
 			}
+		}
+		if count != len(test.want) {
+			t.Errorf("For seed %q, got %v but wanted %v\n", test.seed, got, test.want)
 		}
 	}
 }

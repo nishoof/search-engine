@@ -116,7 +116,7 @@ func TestCrawl(t *testing.T) {
 	}
 
 	for _, test := range tests {
-		got := crawl(test.seed)
+		got, _ := crawl(test.seed)
 		if !reflect.DeepEqual(got, test.want) {
 			t.Errorf("For seed %q, got [%s] but wanted [%s]\n", test.seed, strings.Join(got, ", "), strings.Join(test.want, ", "))
 		}

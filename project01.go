@@ -64,6 +64,7 @@ func extractWords(node *html.Node, words map[string]struct{}) {
 	}
 	newWords := strings.FieldsFunc(node.Data, delimiterFunc)
 	for _, word := range newWords {
+		word = strings.ToLower(word)
 		words[word] = struct{}{}
 	}
 }
@@ -111,11 +112,12 @@ func cleanHrefs(base string, hrefs map[string]struct{}) []string {
 }
 
 /* Crawls the website starting from the given seed URL and returns a slice of all crawled URLs */
-func crawl(seed string) []string {
+func crawl(seed string) ([]string, map[string]struct{}) {
 	crawled := make([]string, 0)
 	q := make([]string, 0)
 	q = append(q, seed)
 	visitedSet := make(map[string]struct{})
+	wordsSet := make(map[string]struct{})
 
 	for len(q) > 0 {
 		url := q[0]
@@ -128,9 +130,18 @@ func crawl(seed string) []string {
 		defer body.Close()
 
 		reader := bufio.NewReader(body)
-		_, hrefs := extract(reader) // not doing anything with words for now
 		host := extractHost(url)
+		words, hrefs := extract(reader)
 		cleanedHrefs := cleanHrefs(host, hrefs)
+
+		for word := range words {
+			fmt.Printf("%s ", word)
+		}
+		fmt.Printf("\n\n")
+
+		for word := range words {
+			wordsSet[word] = struct{}{}
+		}
 
 		for _, href := range cleanedHrefs {
 			_, visited := visitedSet[href]
@@ -140,9 +151,14 @@ func crawl(seed string) []string {
 		}
 	}
 
-	return crawled
+	return crawled, wordsSet
 }
 
 func main() {
-	crawl("https://usf-cs272-f25.github.io/test-data/project01/")
+	_, words := crawl("https://usf-cs272-f25.github.io/")
+	fmt.Printf("Extracted Words: \n")
+	for word := range words {
+		fmt.Printf("%s ", word)
+	}
+	fmt.Println()
 }

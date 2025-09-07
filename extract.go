@@ -30,8 +30,8 @@ func extractDfsHelper(node *html.Node, words map[string]struct{}, hrefs map[stri
 		extractWords(node, words)
 	} else if node.Type == html.ElementNode && node.DataAtom == atom.A {
 		extractHrefs(node, hrefs)
-	} else if node.Type == html.ElementNode && (node.DataAtom == atom.Style || node.DataAtom == atom.Title || node.DataAtom == atom.Script) {
-		return // skip the <style>, <title>, and <script> subtrees
+	} else if node.Type == html.ElementNode && (node.DataAtom == atom.Style || node.DataAtom == atom.Script) {
+		return // skip the <style> and <script> subtrees
 	}
 	for child := node.FirstChild; child != nil; child = child.NextSibling {
 		extractDfsHelper(child, words, hrefs)

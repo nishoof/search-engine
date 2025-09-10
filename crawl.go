@@ -21,7 +21,6 @@ func crawl(seed string) map[string][]string {
 		url := q[0]
 		q = q[1:]
 		visitedSet[url] = struct{}{}
-		fmt.Printf("Crawling: %s\n", url)
 
 		body := download(url)
 		if body == nil {

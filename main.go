@@ -1,5 +1,5 @@
 package main
 
 func main() {
-	crawl("https://usf-cs272-f25.github.io/test-data/rnj/")
+	search("https://usf-cs272-f25.github.io/test-data/rnj/sceneI_30.1.html", "Benvolio")
 }

@@ -6,15 +6,15 @@ import (
 	"net/url"
 )
 
-/* Crawls the website starting from the given seed URL and returns a slice of all crawled URLs */
-func crawl(seed string) (map[string]struct{}, map[string]struct{}) {
+/* Crawls the website starting from the given seed URL and returns a map that maps a page URL to the words found on the page */
+func crawl(seed string) map[string][]string {
 	q := make([]string, 0)
 	q = append(q, seed)
 	visitedSet := make(map[string]struct{})
-	wordsSet := make(map[string]struct{})
+	mp := make(map[string][]string) // maps URL to list of words
 	host := extractHost(seed)
 	if host == "" {
-		return nil, nil
+		return nil
 	}
 
 	for len(q) > 0 {
@@ -34,17 +34,10 @@ func crawl(seed string) (map[string]struct{}, map[string]struct{}) {
 		if words == nil || hrefs == nil {
 			continue
 		}
+
+		mp[url] = append(mp[url], words...)
+
 		cleanedHrefs := cleanHrefs(host, hrefs)
-
-		for _, word := range words {
-			fmt.Printf("%s ", word)
-		}
-		fmt.Printf("\n\n")
-
-		for _, word := range words {
-			wordsSet[word] = struct{}{}
-		}
-
 		for _, href := range cleanedHrefs {
 			_, visited := visitedSet[href]
 			if !visited && extractHost(href) == host {
@@ -53,7 +46,7 @@ func crawl(seed string) (map[string]struct{}, map[string]struct{}) {
 		}
 	}
 
-	return visitedSet, wordsSet
+	return mp
 }
 
 /* Extracts the host from the given href */

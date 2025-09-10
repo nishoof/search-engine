@@ -1,36 +1,29 @@
 package main
 
-import "testing"
+import (
+	"reflect"
+	"testing"
+)
 
 func TestCrawl(t *testing.T) {
-	tests := []struct {
-		seed string
-		want []string
-	}{
-		{testPaths[0], []string{
-			testPaths[0],
-			testPaths[1],
-			testPaths[2],
-			testPaths[3],
-		}},
-	}
-
 	ts := getTestServer()
 	defer ts.Close()
 
+	tests := []struct {
+		seed string
+		want map[string][]string
+	}{
+		{testPaths[0], map[string][]string{
+			ts.URL + testPaths[0]: {"simple", "html", "href", "html", "style", "html"},
+			ts.URL + testPaths[1]: {"hello", "cs", "272", "there", "are", "no", "links", "here"},
+			ts.URL + testPaths[2]: {"for", "a", "simple", "example", "see", "simple", "html"},
+			ts.URL + testPaths[3]: {"style", "here", "is", "a", "blue", "link", "to", "href", "html", "and", "a", "red", "link", "to", "simple", "html"},
+		}},
+	}
+
 	for _, test := range tests {
-		got, _ := crawl(ts.URL + test.seed)
-		if len(got) != len(test.want) {
-			t.Errorf("For seed %q, got %d URLs but wanted %d\n", test.seed, len(got), len(test.want))
-		}
-		count := 0
-		for _, v := range test.want {
-			_, exists := got[ts.URL+v]
-			if exists {
-				count++
-			}
-		}
-		if count != len(test.want) {
+		got := crawl(ts.URL + test.seed)
+		if !reflect.DeepEqual(got, test.want) {
 			t.Errorf("For seed %q, got %v but wanted %v\n", test.seed, got, test.want)
 		}
 	}

@@ -30,6 +30,28 @@ func getTestServer() *httptest.Server {
 			http.ServeFile(w, r, "test-data/href.html")
 		case testPaths[3]:
 			http.ServeFile(w, r, "test-data/style.html")
+		case "/test-data/rnj/sceneI_30.0.html":
+			http.ServeFile(w, r, "test-data/rnj/sceneI_30.0.html")
+		case "/test-data/rnj/sceneI_30.1.html":
+			http.ServeFile(w, r, "test-data/rnj/sceneI_30.1.html")
+		case "/test-data/rnj/sceneI_30.2.html":
+			http.ServeFile(w, r, "test-data/rnj/sceneI_30.2.html")
+		case "/test-data/rnj/sceneI_30.3.html":
+			http.ServeFile(w, r, "test-data/rnj/sceneI_30.3.html")
+		case "/test-data/rnj/sceneI_30.4.html":
+			http.ServeFile(w, r, "test-data/rnj/sceneI_30.4.html")
+		case "/test-data/rnj/sceneI_30.5.html":
+			http.ServeFile(w, r, "test-data/rnj/sceneI_30.5.html")
+		case "/test-data/rnj/sceneII_30.0.html":
+			http.ServeFile(w, r, "test-data/rnj/sceneII_30.0.html")
+		case "/test-data/rnj/sceneII_30.1.html":
+			http.ServeFile(w, r, "test-data/rnj/sceneII_30.1.html")
+		case "/test-data/rnj/sceneII_30.2.html":
+			http.ServeFile(w, r, "test-data/rnj/sceneII_30.2.html")
+		case "/test-data/rnj/sceneII_30.3.html":
+			http.ServeFile(w, r, "test-data/rnj/sceneII_30.3.html")
+		case "/test-data/rnj/":
+			http.ServeFile(w, r, "test-data/rnj/index.html")
 		default:
 			http.NotFound(w, r)
 		}

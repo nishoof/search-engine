@@ -22,9 +22,9 @@ func cleanHref(base string, href string) string {
 }
 
 /* Calls cleanHref() on each of the given hrefs and returns the cleaned hrefs in a slice */
-func cleanHrefs(base string, hrefs map[string]struct{}) []string {
+func cleanHrefs(base string, hrefs []string) []string {
 	cleanedSlice := make([]string, 0, len(hrefs))
-	for href := range hrefs {
+	for _, href := range hrefs {
 		clean := cleanHref(base, href)
 		if clean != "" {
 			cleanedSlice = append(cleanedSlice, clean)

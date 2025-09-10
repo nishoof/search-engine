@@ -10,22 +10,22 @@ import (
 	"golang.org/x/net/html/atom"
 )
 
-/* Extracts the words and hrefs from the contents of a website represented as a Reader, returning them as 2 maps (to avoid duplicates) */
-func extract(reader *bufio.Reader) (map[string]struct{}, map[string]struct{}) {
+/* Extracts the words and hrefs from the contents of a website represented as a Reader, returning them as 2 slices */
+func extract(reader *bufio.Reader) ([]string, []string) {
 	tree, err := html.Parse(reader)
 	if err != nil {
 		fmt.Printf("Error parsing HTML: %v\n", err)
 		return nil, nil
 	}
 
-	words := make(map[string]struct{})
-	hrefs := make(map[string]struct{})
-	extractDfsHelper(tree, words, hrefs)
+	words := make([]string, 0)
+	hrefs := make([]string, 0)
+	extractDfsHelper(tree, &words, &hrefs)
 	return words, hrefs
 }
 
-/* Does a recursive dfs on the HTML node tree, extracting words and hrefs into the given sets, and skipping nodes that we don't want (such as style) */
-func extractDfsHelper(node *html.Node, words map[string]struct{}, hrefs map[string]struct{}) {
+/* Does a recursive dfs on the HTML node tree, extracting words and hrefs into the given slices, and skipping nodes that we don't want (such as style) */
+func extractDfsHelper(node *html.Node, words *[]string, hrefs *[]string) {
 	if node.Type == html.TextNode {
 		extractWords(node, words)
 	} else if node.Type == html.ElementNode && node.DataAtom == atom.A {
@@ -38,8 +38,8 @@ func extractDfsHelper(node *html.Node, words map[string]struct{}, hrefs map[stri
 	}
 }
 
-/* Extracts words from the given text node and adds them to the given words set */
-func extractWords(node *html.Node, words map[string]struct{}) {
+/* Extracts words from the given text node and adds them to the given words slice */
+func extractWords(node *html.Node, words *[]string) {
 	// Verify that the node is a text node
 	if node.Type != html.TextNode {
 		panic("Invalid node")
@@ -49,14 +49,15 @@ func extractWords(node *html.Node, words map[string]struct{}) {
 		return !unicode.IsLetter(c) && !unicode.IsNumber(c)
 	}
 	newWords := strings.FieldsFunc(node.Data, delimiterFunc)
+
 	for _, word := range newWords {
 		word = strings.ToLower(word)
-		words[word] = struct{}{}
+		*words = append(*words, word)
 	}
 }
 
-/* Extracts href attributes from the given anchor node and adds them to the given hrefs set */
-func extractHrefs(node *html.Node, hrefs map[string]struct{}) {
+/* Extracts href attributes from the given anchor node and adds them to the given hrefs slice */
+func extractHrefs(node *html.Node, hrefs *[]string) {
 	// Verify that the node is an anchor element node
 	if node.Type != html.ElementNode || node.DataAtom != atom.A {
 		panic("Invalid node")
@@ -64,7 +65,7 @@ func extractHrefs(node *html.Node, hrefs map[string]struct{}) {
 
 	for _, attribute := range node.Attr {
 		if attribute.Key == "href" {
-			hrefs[attribute.Val] = struct{}{}
+			*hrefs = append(*hrefs, attribute.Val)
 			break
 		}
 	}

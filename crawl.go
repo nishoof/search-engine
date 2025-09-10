@@ -36,12 +36,12 @@ func crawl(seed string) (map[string]struct{}, map[string]struct{}) {
 		}
 		cleanedHrefs := cleanHrefs(host, hrefs)
 
-		for word := range words {
+		for _, word := range words {
 			fmt.Printf("%s ", word)
 		}
 		fmt.Printf("\n\n")
 
-		for word := range words {
+		for _, word := range words {
 			wordsSet[word] = struct{}{}
 		}
 

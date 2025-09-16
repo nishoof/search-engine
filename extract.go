@@ -10,7 +10,7 @@ import (
 	"golang.org/x/net/html/atom"
 )
 
-/* Extracts the words and hrefs from the contents of a website represented as a Reader, returning them as 2 slices */
+/* Extracts the relevant words and hrefs from the contents of a website represented as a Reader, returning them as 2 slices */
 func extract(reader *bufio.Reader) ([]string, []string) {
 	tree, err := html.Parse(reader)
 	if err != nil {
@@ -24,7 +24,7 @@ func extract(reader *bufio.Reader) ([]string, []string) {
 	return words, hrefs
 }
 
-/* Does a recursive dfs on the HTML node tree, extracting words and hrefs into the given slices, and skipping nodes that we don't want (such as style) */
+/* Does a recursive dfs on the HTML node tree, extracting relevant words and hrefs into the given slices, and skipping nodes that we don't want (such as style) */
 func extractDfsHelper(node *html.Node, words *[]string, hrefs *[]string) {
 	if node.Type == html.TextNode {
 		extractWords(node, words)
@@ -38,7 +38,7 @@ func extractDfsHelper(node *html.Node, words *[]string, hrefs *[]string) {
 	}
 }
 
-/* Extracts words from the given text node and adds them to the given words slice */
+/* Extracts relevant words from the given text node and adds them to the given words slice */
 func extractWords(node *html.Node, words *[]string) {
 	// Verify that the node is a text node
 	if node.Type != html.TextNode {
@@ -52,7 +52,9 @@ func extractWords(node *html.Node, words *[]string) {
 
 	for _, word := range newWords {
 		word = strings.ToLower(word)
-		*words = append(*words, word)
+		if !isStopWord(word) {
+			*words = append(*words, word)
+		}
 	}
 }
 

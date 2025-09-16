@@ -28,6 +28,14 @@ func (ii InvertedIndex) GetFrequency(word, documentName string) int {
 	return fm.GetFrequency(documentName)
 }
 
+func (ii InvertedIndex) GetNumDocsWithWord(word string) int {
+	fm, exists := ii[word]
+	if !exists {
+		return 0
+	}
+	return len(fm)
+}
+
 func (ii InvertedIndex) GetTotalFrequency(word string) int {
 	fm, exists := ii[word]
 	if !exists {

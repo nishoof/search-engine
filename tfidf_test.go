@@ -13,13 +13,14 @@ func TestTfIdf(t *testing.T) {
 	}{
 		{
 			"simple", "index", 3, 1, InvertedIndex{
-				"simple": {"index": 1},
-			}, -0.23104906018664842,
+				map[string]map[string]int{"simple": {"index": 1}},
+				map[string]int{"index": 3},
+			}, 0.16666666666666667,
 		},
 	}
 
 	for testIdx, test := range tests {
-		tfidf := tfidf(test.word, test.doc, test.numWordsInDoc, test.numDocs, test.invertedIndex)
+		tfidf := tfidf(test.word, test.doc, test.numWordsInDoc, test.numDocs, &test.invertedIndex)
 		if tfidf != test.want {
 			t.Errorf("test %d failed. got %f, want %f\n",
 				testIdx, tfidf, test.want)

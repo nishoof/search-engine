@@ -28,24 +28,12 @@ func (ii InvertedIndex) GetFrequency(word, documentName string) int {
 	return fm.GetFrequency(documentName)
 }
 
-func (ii InvertedIndex) GetNumDocsWithWord(word string) int {
+func (ii InvertedIndex) GetNumDocsWithWord(word string) int { // TODO: for git, this is used in tfidf
 	fm, exists := ii[word]
 	if !exists {
 		return 0
 	}
 	return len(fm)
-}
-
-func (ii InvertedIndex) GetTotalFrequency(word string) int {
-	fm, exists := ii[word]
-	if !exists {
-		return 0
-	}
-	total := 0
-	for _, freq := range fm {
-		total += freq
-	}
-	return total
 }
 
 func (ii InvertedIndex) Increment(word, documentName string) {

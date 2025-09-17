@@ -1,52 +1,101 @@
 package main
 
-import "fmt"
+import (
+	"fmt"
+	"sort"
 
-//-- FrequencyMap
-
-type FrequencyMap map[string]int // maps document names to their frequency counts
-
-func (fm FrequencyMap) GetFrequency(documentName string) int {
-	return fm[documentName]
-}
-
-func (fm FrequencyMap) Print() {
-	for doc, freq := range fm {
-		fmt.Println(doc, freq)
-	}
-}
+	"github.com/kljensen/snowball"
+)
 
 //-- InvertedIndex
 
-type InvertedIndex map[string]FrequencyMap // maps words to their FrequencyMap
+type Result struct {
+	url         string
+	occurrences int
+	score       float32
+}
 
-func (ii InvertedIndex) GetFrequency(word, documentName string) int {
-	fm, exists := ii[word]
+type Results []Result
+
+type InvertedIndex struct {
+	frequency map[string]map[string]int // maps words to their FrequencyMap
+	wordCount map[string]int            // maps document names to their word counts
+}
+
+func NewInvertedIndex(mp map[string][]string) *InvertedIndex {
+	ii := new(InvertedIndex)
+	ii.frequency = make(map[string]map[string]int)
+	ii.wordCount = make(map[string]int)
+	for url, words := range mp {
+		for _, w := range words {
+			stemmed, err := snowball.Stem(w, "english", true)
+			if err != nil {
+				fmt.Println("Error stemming word:", err)
+				return nil
+			}
+			ii.Increment(stemmed, url)
+			ii.wordCount[url]++
+		}
+	}
+	return ii
+}
+
+func (ii *InvertedIndex) GetFrequency(word, documentName string) int {
+	fm, exists := ii.frequency[word]
 	if !exists {
 		return 0
 	}
-	return fm.GetFrequency(documentName)
+	return fm[documentName]
 }
 
-func (ii InvertedIndex) GetNumDocsWithWord(word string) int { // TODO: for git, this is used in tfidf
-	fm, exists := ii[word]
+func (ii *InvertedIndex) GetNumDocs() int {
+	return len(ii.wordCount)
+}
+
+func (ii *InvertedIndex) GetNumDocsWithWord(word string) int {
+	fm, exists := ii.frequency[word]
 	if !exists {
 		return 0
 	}
 	return len(fm)
 }
 
-func (ii InvertedIndex) Increment(word, documentName string) {
-	if _, exists := ii[word]; !exists {
-		ii[word] = make(FrequencyMap)
-	}
-	ii[word][documentName]++
+func (ii *InvertedIndex) GetWordCount(documentName string) int {
+	return ii.wordCount[documentName]
 }
 
-func (ii InvertedIndex) Print() {
-	for word, fm := range ii {
-		fmt.Printf("----- Word: %s\n", word)
-		fm.Print()
-		fmt.Println()
+func (ii *InvertedIndex) Increment(word, documentName string) {
+	if _, exists := ii.frequency[word]; !exists {
+		ii.frequency[word] = make(map[string]int)
 	}
+	ii.frequency[word][documentName]++
+	ii.wordCount[documentName]++
+}
+
+func (ii *InvertedIndex) Search(word string) Results {
+	// Stem the search word
+	word, err := snowball.Stem(word, "english", true)
+	if err != nil {
+		fmt.Println("Error stemming word:", err)
+		return nil
+	}
+
+	// Calculate TF-IDF for each document
+	numDocs := ii.GetNumDocs()
+	results := make(Results, 0)
+	for url := range ii.wordCount {
+		occurrences := ii.GetFrequency(word, url)
+		if occurrences == 0 {
+			continue
+		}
+		tfidf := tfidf(word, url, ii.GetWordCount(url), numDocs, ii)
+		results = append(results, Result{url, occurrences, float32(tfidf)})
+	}
+
+	// Sort results by score
+	sort.Slice(results, func(i, j int) bool {
+		return results[i].score > results[j].score
+	})
+
+	return results
 }

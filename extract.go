@@ -11,7 +11,7 @@ import (
 )
 
 /* Extracts the relevant words and hrefs from the contents of a website represented as a Reader, returning them as 2 slices */
-func extract(reader *bufio.Reader) ([]string, []string) {
+func extract(reader *bufio.Reader, stopper *Stopper) ([]string, []string) {
 	tree, err := html.Parse(reader)
 	if err != nil {
 		fmt.Printf("Error parsing HTML: %v\n", err)
@@ -20,26 +20,26 @@ func extract(reader *bufio.Reader) ([]string, []string) {
 
 	words := make([]string, 0)
 	hrefs := make([]string, 0)
-	extractDfsHelper(tree, &words, &hrefs)
+	extractDfsHelper(tree, &words, &hrefs, stopper)
 	return words, hrefs
 }
 
 /* Does a recursive dfs on the HTML node tree, extracting relevant words and hrefs into the given slices, and skipping nodes that we don't want (such as style) */
-func extractDfsHelper(node *html.Node, words *[]string, hrefs *[]string) {
+func extractDfsHelper(node *html.Node, words *[]string, hrefs *[]string, stopper *Stopper) {
 	if node.Type == html.TextNode {
-		extractWords(node, words)
+		extractWords(node, words, stopper)
 	} else if node.Type == html.ElementNode && node.DataAtom == atom.A {
 		extractHrefs(node, hrefs)
 	} else if node.Type == html.ElementNode && (node.DataAtom == atom.Style || node.DataAtom == atom.Script) {
 		return // skip the <style> and <script> subtrees
 	}
 	for child := node.FirstChild; child != nil; child = child.NextSibling {
-		extractDfsHelper(child, words, hrefs)
+		extractDfsHelper(child, words, hrefs, stopper)
 	}
 }
 
 /* Extracts relevant words from the given text node and adds them to the given words slice */
-func extractWords(node *html.Node, words *[]string) {
+func extractWords(node *html.Node, words *[]string, stopper *Stopper) {
 	// Verify that the node is a text node
 	if node.Type != html.TextNode {
 		panic("Invalid node")
@@ -52,7 +52,7 @@ func extractWords(node *html.Node, words *[]string) {
 
 	for _, word := range newWords {
 		word = strings.ToLower(word)
-		if !isStopWord(word) {
+		if !stopper.isStopWord(word) {
 			*words = append(*words, word)
 		}
 	}

@@ -18,8 +18,10 @@ func TestStop(t *testing.T) {
 		{"phil", false},
 	}
 
+	stopper := NewStopper()
+
 	for testIdx, test := range tests {
-		got := isStopWord(test.word)
+		got := stopper.isStopWord(test.word)
 		if got != test.want {
 			t.Errorf("test %d (%s): got %v, want %v", testIdx, test.word, got, test.want)
 		}

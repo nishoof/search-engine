@@ -17,10 +17,11 @@ func TestExtract(t *testing.T) {
 	}
 
 	for testIdx, test := range tests {
+		stopper := NewStopper()
 		testFileStr := strings.Join(test.testData, "\n")
 		stringsReader := strings.NewReader(testFileStr)
 		bufioReader := bufio.NewReader(stringsReader)
-		gotWords, gotHrefs := extract(bufioReader)
+		gotWords, gotHrefs := extract(bufioReader, stopper)
 
 		if !reflect.DeepEqual(gotWords, test.wantWords) {
 			t.Errorf("For test %d, got words %v but wanted %v\n", testIdx, gotWords, test.wantWords)

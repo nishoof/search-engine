@@ -16,6 +16,7 @@ func crawl(seed string) map[string][]string {
 	if host == "" {
 		return nil
 	}
+	stopper := NewStopper() // used by the extract function
 
 	for len(q) > 0 {
 		url := q[0]
@@ -29,7 +30,7 @@ func crawl(seed string) map[string][]string {
 		defer body.Close()
 
 		reader := bufio.NewReader(body)
-		words, hrefs := extract(reader)
+		words, hrefs := extract(reader, stopper)
 		if words == nil || hrefs == nil {
 			continue
 		}

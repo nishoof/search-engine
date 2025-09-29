@@ -6,7 +6,7 @@ import (
 
 func TestSearch(t *testing.T) {
 	tests := []struct {
-		ii   *InvertedIndex
+		idx  Index
 		word string
 		want Results
 	}{
@@ -50,7 +50,7 @@ func TestSearch(t *testing.T) {
 
 	for testIdx, test := range tests {
 		// Make sure we got the expected number of results
-		got := test.ii.Search(test.word)
+		got := test.idx.Search(test.word)
 		if len(got) != len(test.want) {
 			t.Errorf("Test %d: Got %d results but wanted %d\n", testIdx, len(got), len(test.want))
 		}

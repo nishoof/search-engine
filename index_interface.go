@@ -8,6 +8,11 @@ type Result struct {
 
 type Results []Result
 
+type IndexType bool
+
+const IN_MEM IndexType = false
+const SQLITE IndexType = true
+
 type Index interface {
 	GetFrequency(word, documentName string) int
 	GetNumDocs() int

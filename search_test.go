@@ -11,7 +11,7 @@ func TestSearch(t *testing.T) {
 		want Results
 	}{
 		{
-			startServer(),
+			startServer(IN_MEM),
 			"Romeo",
 			Results{
 				{url: "http://localhost:8080/top10/The%20Project%20Gutenberg%20eBook%20of%20Romeo%20and%20Juliet,%20by%20William%20Shakespeare/sceneII_30.2.html", occurrences: 41, score: 0.33565494},

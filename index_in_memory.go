@@ -23,7 +23,6 @@ func NewIndexInMemory(mp map[string][]string) IndexInMemory {
 				panic(err)
 			}
 			idx.Increment(stemmed, url)
-			idx.wordCount[url]++
 		}
 	}
 	return *idx

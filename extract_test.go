@@ -12,8 +12,8 @@ func TestExtract(t *testing.T) {
 		testData, wantWords, wantHrefs []string
 	}{
 		{testData[1], []string{"272", "links"}, []string{}},
-		{testData[2], []string{"simple", "simple"}, []string{"/test-data/project02/simple.html"}},
-		{testData[3], []string{"style", "blue", "link", "href", "red", "link", "simple"}, []string{"/test-data/project02/href.html", "/test-data/project02/simple.html"}},
+		{testData[2], []string{"simple", "simple"}, []string{"/test-data/search-engine/simple.html"}},
+		{testData[3], []string{"style", "blue", "link", "href", "red", "link", "simple"}, []string{"/test-data/search-engine/href.html", "/test-data/search-engine/simple.html"}},
 	}
 
 	for testIdx, test := range tests {

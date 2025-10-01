@@ -6,17 +6,17 @@ import (
 )
 
 var testData = [][]string{
-	{"<html>", "<body>", "  <ul>", "    <li>", "      <a href=\"/test-data/project02/simple.html\">simple.html</a>", "    </li>", "    <li>", "      <a href=\"/test-data/project02/href.html\">href.html</a>", "    </li>", "    <li>", "      <a href=\"/test-data/project02/style.html\">style.html</a>", "  </ul>", "</body>", "</html>"},
+	{"<html>", "<body>", "  <ul>", "    <li>", "      <a href=\"/test-data/search-engine/simple.html\">simple.html</a>", "    </li>", "    <li>", "      <a href=\"/test-data/search-engine/href.html\">href.html</a>", "    </li>", "    <li>", "      <a href=\"/test-data/search-engine/style.html\">style.html</a>", "  </ul>", "</body>", "</html>"},
 	{"<html>", "<body>", "Hello CS 272, there are no links here.", "</body>", "</html>"},
-	{"<html>", "<body>", "For a simple example, see <a href=\"/test-data/project02/simple.html\">simple.html</a>", "</body>", "</html>"},
-	{"<html>", "<head>", "  <title>Style</title>", "  <style>", "    a.blue {", "      color: blue;", "    }", "    a.red {", "      color: red;", "    }", "  </style>", "<body>", "  <p>", "    Here is a blue link to <a class=\"blue\" href=\"/test-data/project02/href.html\">href.html</a>", "  </p>", "  <p>", "    And a red link to <a class=\"red\" href=\"/test-data/project02/simple.html\">simple.html</a>", "  </p>", "</body>", "</html>"},
+	{"<html>", "<body>", "For a simple example, see <a href=\"/test-data/search-engine/simple.html\">simple.html</a>", "</body>", "</html>"},
+	{"<html>", "<head>", "  <title>Style</title>", "  <style>", "    a.blue {", "      color: blue;", "    }", "    a.red {", "      color: red;", "    }", "  </style>", "<body>", "  <p>", "    Here is a blue link to <a class=\"blue\" href=\"/test-data/search-engine/href.html\">href.html</a>", "  </p>", "  <p>", "    And a red link to <a class=\"red\" href=\"/test-data/search-engine/simple.html\">simple.html</a>", "  </p>", "</body>", "</html>"},
 }
 
 var testPaths = []string{
-	"/test-data/project02",
-	"/test-data/project02/simple.html",
-	"/test-data/project02/href.html",
-	"/test-data/project02/style.html",
+	"/test-data/search-engine",
+	"/test-data/search-engine/simple.html",
+	"/test-data/search-engine/href.html",
+	"/test-data/search-engine/style.html",
 }
 
 func getTestServer() *httptest.Server {

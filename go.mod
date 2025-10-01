@@ -1,4 +1,4 @@
-module project02
+module search-engine
 
 go 1.25.0
 

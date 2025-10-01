@@ -2,6 +2,7 @@ package main
 
 import (
 	"database/sql"
+	"fmt"
 
 	"github.com/kljensen/snowball"
 	_ "github.com/mattn/go-sqlite3"
@@ -35,6 +36,24 @@ func NewIndexSQLite(mp map[string][]string) IndexSQLite {
 	}
 
 	return idx
+}
+
+func (idx IndexSQLite) GetDocs() []string {
+	db := idx.db
+
+	rows, err := db.Query(`
+		SELECT name FROM documents;
+	`)
+	checkErr(err)
+	defer rows.Close()
+
+	documentNames := make([]string, 0)
+	for rows.Next() {
+		var documentName string
+		rows.Scan(&documentName)
+		documentNames = append(documentNames, documentName)
+	}
+	return documentNames
 }
 
 func (idx IndexSQLite) GetFrequency(word, documentName string) int {
@@ -139,6 +158,7 @@ func (idx IndexSQLite) Increment(word, documentName string) {
 	documentId := getDocumentId(db, documentName)
 	if documentId == -1 {
 		// document doesn't exist, so add it to the documents table
+		fmt.Printf("New document %s\n", documentName)
 		_, err := db.Exec(`
 			INSERT INTO documents(name, word_count) VALUES(?, 0)
 		`, documentName)

@@ -14,8 +14,7 @@ func startServer(indexType IndexType) Index {
 
 	// Crawl the top 10 pages and build the index
 	fmt.Println("Crawling...")
-	// mp := crawl("http://localhost:8080/top10")
-	mp := crawl("https://usf-cs272-f25.github.io/")
+	mp := crawl("http://localhost:8080/top10")
 
 	fmt.Println("Building index...")
 	var idx Index

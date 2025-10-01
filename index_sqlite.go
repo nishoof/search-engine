@@ -99,12 +99,6 @@ func (idx IndexSQLite) GetNumDocs() int {
 }
 
 func (idx IndexSQLite) GetNumDocsWithWord(word string) int {
-	// fm, exists := idx.frequency[word]
-	// if !exists {
-	// 	return 0
-	// }
-	// return len(fm)
-
 	db := idx.db
 
 	wordId := getWordId(db, word)
@@ -217,9 +211,23 @@ func initTables(db *sql.DB) {
 			id INTEGER PRIMARY KEY,
 			word_id INTEGER,
 			doc_id INTEGER,
-			count INTEGER
+			count INTEGER,
+			FOREIGN KEY (word_id) REFERENCES words(id),
+			FOREIGN KEY (doc_id) REFERENCES documents(id)
 		);
 	`)
+	checkErr(err)
+
+	_, err = db.Exec(`CREATE INDEX IF NOT EXISTS idx_documents_name ON documents(name);`)
+	checkErr(err)
+
+	_, err = db.Exec(`CREATE INDEX IF NOT EXISTS idx_words_word ON words(word);`)
+	checkErr(err)
+
+	_, err = db.Exec(`CREATE INDEX IF NOT EXISTS idx_frequencies_word_doc ON frequencies(word_id, doc_id);`)
+	checkErr(err)
+
+	_, err = db.Exec(`PRAGMA foreign_keys = ON;`)
 	checkErr(err)
 }
 

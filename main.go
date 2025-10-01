@@ -14,14 +14,15 @@ func startServer(indexType IndexType) Index {
 
 	// Crawl the top 10 pages and build the index
 	fmt.Println("Crawling...")
-	mp := crawl("http://localhost:8080/top10")
+	// mp := crawl("http://localhost:8080/top10")
+	mp := crawl("https://usf-cs272-f25.github.io/")
 
 	fmt.Println("Building index...")
 	var idx Index
 	if indexType == IN_MEM {
 		idx = NewIndexInMemory(mp)
 	} else {
-		panic("SQLite index not yet implemented")
+		idx = NewIndexSQLite(mp)
 	}
 
 	fmt.Println("Done\nhttp://localhost:8080/")
@@ -29,7 +30,7 @@ func startServer(indexType IndexType) Index {
 	// Handle /search requests
 	http.HandleFunc("/search", func(w http.ResponseWriter, r *http.Request) {
 		q := r.URL.Query().Get("q")
-		results := idx.Search(q)
+		results := Search(q, idx)
 		fmt.Fprintf(w, "search term: %s\n\n", q)
 		for i, result := range results {
 			fmt.Fprintf(w, "rank %3d\tscore: %f, occurrences: %d,\turl: %s\n", i+1, result.score, result.occurrences, result.url)

@@ -1,9 +1,6 @@
 package main
 
 import (
-	"fmt"
-	"sort"
-
 	"github.com/kljensen/snowball"
 )
 
@@ -26,6 +23,17 @@ func NewIndexInMemory(mp map[string][]string) IndexInMemory {
 		}
 	}
 	return *idx
+}
+
+func (idx IndexInMemory) GetDocs() []string {
+	// the document names are the keys of the wordCount map
+	documentNames := make([]string, len(idx.wordCount))
+	i := 0
+	for documentName := range idx.wordCount {
+		documentNames[i] = documentName
+		i++
+	}
+	return documentNames
 }
 
 func (idx IndexInMemory) GetFrequency(word, documentName string) int {
@@ -58,32 +66,4 @@ func (idx IndexInMemory) Increment(word, documentName string) {
 	}
 	idx.frequency[word][documentName]++
 	idx.wordCount[documentName]++
-}
-
-func (idx IndexInMemory) Search(word string) Results {
-	// Stem the search word
-	word, err := snowball.Stem(word, "english", true)
-	if err != nil {
-		fmt.Println("Error stemming word:", err)
-		return nil
-	}
-
-	// Calculate TF-IDF for each document
-	numDocs := idx.GetNumDocs()
-	results := make(Results, 0)
-	for url := range idx.wordCount {
-		occurrences := idx.GetFrequency(word, url)
-		if occurrences == 0 {
-			continue
-		}
-		tfidf := tfidf(word, url, idx.GetWordCount(url), numDocs, idx)
-		results = append(results, Result{url, occurrences, float32(tfidf)})
-	}
-
-	// Sort results by score
-	sort.Slice(results, func(i, j int) bool {
-		return results[i].score > results[j].score
-	})
-
-	return results
 }

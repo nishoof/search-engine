@@ -11,7 +11,7 @@ func TestSearch(t *testing.T) {
 		want Results
 	}{
 		{
-			startServer(IN_MEM),
+			startServer(SQLITE),
 			"Romeo",
 			Results{
 				Result{"http://localhost:8080/top10/The%20Project%20Gutenberg%20eBook%20of%20Romeo%20and%20Juliet,%20by%20William%20Shakespeare/sceneII_30.2.html", 41, 0.671309888},
@@ -50,7 +50,7 @@ func TestSearch(t *testing.T) {
 
 	for testIdx, test := range tests {
 		// Make sure we got the expected number of results
-		got := test.idx.Search(test.word)
+		got := Search(test.word, test.idx)
 		if len(got) != len(test.want) {
 			t.Errorf("Test %d: Got %d results but wanted %d\n", testIdx, len(got), len(test.want))
 		}

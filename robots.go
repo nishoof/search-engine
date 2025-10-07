@@ -55,10 +55,11 @@ func parseRobotsTxt(robotsTxtUrl string) *RobotsRules {
 	defer body.Close()
 
 	// call helper function on each line
+	applies := false // if the current line applies to me (based on user agent)
 	scanner := bufio.NewScanner(body)
 	for scanner.Scan() {
 		line := scanner.Text()
-		parseRobotsTxtLine(line, rules)
+		parseRobotsTxtLine(line, rules, &applies)
 	}
 
 	if err := scanner.Err(); err != nil {
@@ -68,7 +69,7 @@ func parseRobotsTxt(robotsTxtUrl string) *RobotsRules {
 	return rules
 }
 
-func parseRobotsTxtLine(line string, rules *RobotsRules) {
+func parseRobotsTxtLine(line string, rules *RobotsRules, applies *bool) {
 	if len(line) == 0 {
 		return // skip empty lines
 	}
@@ -76,6 +77,7 @@ func parseRobotsTxtLine(line string, rules *RobotsRules) {
 		return // skip comments
 	}
 
+	// extract key and value
 	split := strings.Split(line, ": ")
 	if len(split) != 2 {
 		panic("unknown line format: " + line)
@@ -83,13 +85,22 @@ func parseRobotsTxtLine(line string, rules *RobotsRules) {
 	key := split[0]
 	value := split[1]
 
+	// handle user agent
+	if key == "User-agent" {
+		pattern := fixPattern(value)
+		*applies = isMyUserAgent(pattern)
+		return
+	}
+
+	// if the current line doesn't apply to use (applies to a different user agent), then skip
+	if !*applies {
+		return
+	}
+
+	// handle everything else
 	switch key {
-	case "User-agent":
-		if value != "*" {
-			panic("Unsupported user-agent: " + value)
-		}
 	case "Disallow":
-		pattern := strings.ReplaceAll(value, "*", ".*")
+		pattern := fixPattern(value)
 		rules.disallowList = append(rules.disallowList, pattern)
 	case "Crawl-delay":
 		delaySeconds, err := strconv.ParseFloat(value, 64)
@@ -97,5 +108,20 @@ func parseRobotsTxtLine(line string, rules *RobotsRules) {
 			panic("Invalid robots.txt. Crawl-delay must be a number, but got " + value + ". " + err.Error())
 		}
 		rules.SetCrawlDelay(delaySeconds)
+	default:
+		fmt.Printf("Skipping unsupported robots.txt line: %s\n", line)
 	}
+}
+
+func fixPattern(str string) string {
+	return strings.ReplaceAll(str, "*", ".*")
+}
+
+func isMyUserAgent(pattern string) bool {
+	const MY_USER_AGENT = "Go-http-client/1.1"
+	matched, err := regexp.MatchString(pattern, MY_USER_AGENT)
+	if err != nil {
+		panic(err)
+	}
+	return matched
 }

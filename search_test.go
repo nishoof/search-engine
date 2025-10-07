@@ -6,12 +6,10 @@ import (
 
 func TestSearch(t *testing.T) {
 	tests := []struct {
-		idx  Index
 		word string
 		want Results
 	}{
 		{
-			startServer(IN_MEM),
 			"Romeo",
 			Results{
 				{"http://localhost:8080/top10/The%20Project%20Gutenberg%20eBook%20of%20Romeo%20and%20Juliet,%20by%20William%20Shakespeare/sceneII_30.2.html", 41, 0.66329426},
@@ -49,7 +47,7 @@ func TestSearch(t *testing.T) {
 	}
 
 	for testIdx, test := range tests {
-		got := Search(test.word, test.idx)
+		got := Search(test.word, idx)
 
 		// Make sure we got the expected number of results
 		if len(got) != len(test.want) {

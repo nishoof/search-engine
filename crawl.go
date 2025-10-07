@@ -4,6 +4,7 @@ import (
 	"bufio"
 	"fmt"
 	"net/url"
+	"time"
 )
 
 /* Crawls the website starting from the given seed URL and returns a map that maps a page URL to the words found on the page */
@@ -18,12 +19,28 @@ func crawl(seed string) map[string][]string {
 	}
 	stopper := NewStopper() // used by the extract function
 
+	robotsTxtUrl, err := url.JoinPath(host, "robots.txt")
+	if err != nil {
+		panic(err)
+	}
+	rules := parseRobotsTxt(robotsTxtUrl)
+
+	fmt.Printf("seed: %s\n", seed)
+	fmt.Printf("host: %s\n", host)
+	fmt.Printf("robotsTxtUrl: %s\n", robotsTxtUrl)
+
 	for len(q) > 0 {
 		url := q[0]
 		q = q[1:]
 		visitedSet[url] = struct{}{}
 
+		if rules.Disallowed(url) {
+			continue // skip urls disallowed by robots.txt
+		}
+
+		fmt.Printf("crawling %s\n", url)
 		body := download(url)
+		time.Sleep(rules.crawlDelay)
 		if body == nil {
 			continue
 		}

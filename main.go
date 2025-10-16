@@ -1,9 +1,9 @@
 package main
 
 import (
+	"flag"
 	"fmt"
 	"net/http"
-	"os"
 	"time"
 )
 
@@ -40,18 +40,17 @@ func startServer(indexType IndexType) Index {
 }
 
 func main() {
-	if len(os.Args) < 2 {
-		panic("Please identify which index should be used. For example, `-index=inmem` or `-index=sqlite`.")
-	}
+	indexFlag := flag.String("index", "", "Specify which index to use: inmem or sqlite")
+	flag.Parse()
 
 	var indexType IndexType
-	switch os.Args[1] {
-	case "-index=inmem":
+	switch *indexFlag {
+	case "inmem":
 		indexType = IN_MEM
-	case "-index=sqlite":
+	case "sqlite":
 		indexType = SQLITE
 	default:
-		panic("Unknown argument: " + os.Args[1])
+		panic("Please specify a valid index with -index=inmem or -index=sqlite")
 	}
 
 	startServer(indexType)

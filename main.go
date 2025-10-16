@@ -7,14 +7,14 @@ import (
 	"time"
 )
 
-func startServer(indexType IndexType) Index {
+func startServer(indexType IndexType, ignoreCrawlDelay bool) Index {
 	// Use http.Dir to serve the contents of ./static for GET requests
 	http.Handle("/", http.FileServer(http.Dir("./static")))
 	go http.ListenAndServe(":8080", nil)
 
 	// Crawl the top 10 pages and build the index
 	fmt.Println("Crawling...")
-	mp := crawl("http://localhost:8080/top10")
+	mp := crawl("http://localhost:8080/top10", ignoreCrawlDelay)
 
 	fmt.Println("Building index...")
 	var idx Index
@@ -41,6 +41,7 @@ func startServer(indexType IndexType) Index {
 
 func main() {
 	indexFlag := flag.String("index", "", "Specify which index to use: inmem or sqlite")
+	fastFlag := flag.Bool("fast", false, "Enable fast mode (ignores crawl-delay)")
 	flag.Parse()
 
 	var indexType IndexType
@@ -53,7 +54,7 @@ func main() {
 		panic("Please specify a valid index with -index=inmem or -index=sqlite")
 	}
 
-	startServer(indexType)
+	startServer(indexType, *fastFlag)
 	for {
 		time.Sleep(100 * time.Millisecond)
 	}

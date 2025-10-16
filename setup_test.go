@@ -8,7 +8,7 @@ import (
 var idx Index
 
 func TestMain(m *testing.M) {
-	idx = startServer(IN_MEM)
+	idx = startServer(IN_MEM, true)
 	exitVal := m.Run()
 	os.Exit(exitVal)
 }

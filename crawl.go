@@ -8,7 +8,7 @@ import (
 )
 
 /* Crawls the website starting from the given seed URL and returns a map that maps a page URL to the words found on the page */
-func crawl(seed string) map[string][]string {
+func crawl(seed string, ignoreCrawlDelay bool) map[string][]string {
 	q := make([]string, 0)
 	q = append(q, seed)
 	visitedSet := make(map[string]struct{})
@@ -24,6 +24,9 @@ func crawl(seed string) map[string][]string {
 		panic(err)
 	}
 	rules := parseRobotsTxt(robotsTxtUrl)
+	if ignoreCrawlDelay {
+		rules.SetCrawlDelay(0)
+	}
 
 	fmt.Printf("seed: %s\n", seed)
 	fmt.Printf("host: %s\n", host)

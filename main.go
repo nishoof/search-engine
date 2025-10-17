@@ -7,7 +7,7 @@ import (
 	"time"
 )
 
-func startServer(indexType IndexType, ignoreCrawlDelay bool) Index {
+func startServer(indexType IndexType, fastMode bool) Index {
 	// Use http.Dir to serve the contents of ./static for GET requests
 	http.Handle("/", http.FileServer(http.Dir("./static")))
 	go http.ListenAndServe(":8080", nil)
@@ -20,7 +20,7 @@ func startServer(indexType IndexType, ignoreCrawlDelay bool) Index {
 	} else {
 		idx = NewIndexSQLite()
 	}
-	crawl("http://localhost:8080/top10", ignoreCrawlDelay, &idx)
+	crawl("http://localhost:8080/top10", fastMode, &idx)
 
 	fmt.Println("Done\nhttp://localhost:8080/")
 

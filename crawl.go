@@ -7,17 +7,16 @@ import (
 	"time"
 )
 
-/* Crawls the website starting from the given seed URL and returns a map that maps a page URL to the words found on the page. fastMode ignores crawl-delay and prints less. If idx is not nil, crawl will also build the index */
-func crawl(seed string, fastMode bool, idx *Index) map[string][]string {
+/* Crawls the website starting from the given seed URL, then crawling all links found on that page, and so on for links found on those pages. fastMode ignores crawl-delay and prints less. If idx is not nil, crawl will also build the index using the index's Increment method */
+func crawl(seed string, fastMode bool, idx *Index) {
 	startTime := time.Now()
 
 	q := make([]string, 0)
 	q = append(q, seed)
 	visitedSet := make(map[string]struct{})
-	mp := make(map[string][]string) // maps URL to list of words
 	host := extractHost(seed)
 	if host == "" {
-		return nil
+		return
 	}
 	stopper := NewStopper() // used by the extract function
 
@@ -56,8 +55,6 @@ func crawl(seed string, fastMode bool, idx *Index) map[string][]string {
 			continue
 		}
 
-		mp[url] = append(mp[url], words...)
-
 		if idx != nil {
 			for _, word := range words {
 				(*idx).Increment(word, url)
@@ -77,8 +74,6 @@ func crawl(seed string, fastMode bool, idx *Index) map[string][]string {
 	duration := endTime.Sub(startTime).Seconds()
 	numUrls := len(visitedSet)
 	fmt.Printf("crawled %d urls in %.2f seconds (%.2f per second)\n", numUrls, duration, (float64)(numUrls)/duration)
-
-	return mp
 }
 
 /* Extracts the host from the given href */

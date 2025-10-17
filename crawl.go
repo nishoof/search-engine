@@ -9,6 +9,8 @@ import (
 
 /* Crawls the website starting from the given seed URL and returns a map that maps a page URL to the words found on the page. fastMode ignores crawl-delay and prints less. If idx is not nil, crawl will also build the index */
 func crawl(seed string, fastMode bool, idx *Index) map[string][]string {
+	startTime := time.Now()
+
 	q := make([]string, 0)
 	q = append(q, seed)
 	visitedSet := make(map[string]struct{})
@@ -70,6 +72,11 @@ func crawl(seed string, fastMode bool, idx *Index) map[string][]string {
 			}
 		}
 	}
+
+	endTime := time.Now()
+	duration := endTime.Sub(startTime).Seconds()
+	numUrls := len(visitedSet)
+	fmt.Printf("crawled %d urls in %.2f seconds (%.2f per second)\n", numUrls, duration, (float64)(numUrls)/duration)
 
 	return mp
 }

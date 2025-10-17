@@ -22,7 +22,7 @@ func TestCrawl(t *testing.T) {
 	}
 
 	for _, test := range tests {
-		got := crawl(ts.URL+test.seed, true)
+		got := crawl(ts.URL+test.seed, true, nil)
 		if !reflect.DeepEqual(got, test.want) {
 			t.Errorf("For seed %q, got %v but wanted %v\n", test.seed, got, test.want)
 		}

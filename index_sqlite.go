@@ -18,22 +18,12 @@ func checkErr(err error) {
 	}
 }
 
-func NewIndexSQLite(mp map[string][]string) IndexSQLite {
+func NewIndexSQLite() IndexSQLite {
 	db, err := sql.Open("sqlite3", "db.db")
 	checkErr(err)
 
 	initTables(db)
 	idx := IndexSQLite{db}
-
-	for url, words := range mp {
-		for _, w := range words {
-			stemmed, err := snowball.Stem(w, "english", true)
-			if err != nil {
-				panic(err)
-			}
-			idx.Increment(stemmed, url)
-		}
-	}
 
 	return idx
 }
@@ -137,6 +127,11 @@ func (idx IndexSQLite) GetWordCount(documentName string) int {
 func (idx IndexSQLite) Increment(word, documentName string) {
 	db := idx.db
 
+	word, err := snowball.Stem(word, "english", true)
+	if err != nil {
+		panic(err)
+	}
+
 	// get the wordId
 	wordId := getWordId(db, word)
 	if wordId == -1 {
@@ -178,7 +173,7 @@ func (idx IndexSQLite) Increment(word, documentName string) {
 
 	// update word count
 	wordCount := idx.GetWordCount(documentName)
-	_, err := db.Exec(`
+	_, err = db.Exec(`
 		UPDATE documents SET word_count = ? WHERE id = ?
 	`, wordCount+1, documentId)
 	checkErr(err)

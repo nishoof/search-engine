@@ -9,19 +9,10 @@ type IndexInMemory struct {
 	wordCount map[string]int            // maps document names to their word counts
 }
 
-func NewIndexInMemory(mp map[string][]string) IndexInMemory {
+func NewIndexInMemory() IndexInMemory {
 	idx := new(IndexInMemory)
 	idx.frequency = make(map[string]map[string]int)
 	idx.wordCount = make(map[string]int)
-	for url, words := range mp {
-		for _, w := range words {
-			stemmed, err := snowball.Stem(w, "english", true)
-			if err != nil {
-				panic(err)
-			}
-			idx.Increment(stemmed, url)
-		}
-	}
 	return *idx
 }
 
@@ -61,6 +52,10 @@ func (idx IndexInMemory) GetWordCount(documentName string) int {
 }
 
 func (idx IndexInMemory) Increment(word, documentName string) {
+	word, err := snowball.Stem(word, "english", true)
+	if err != nil {
+		panic(err)
+	}
 	if _, exists := idx.frequency[word]; !exists {
 		idx.frequency[word] = make(map[string]int)
 	}

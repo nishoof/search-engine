@@ -7,8 +7,8 @@ import (
 	"time"
 )
 
-/* Crawls the website starting from the given seed URL and returns a map that maps a page URL to the words found on the page */
-func crawl(seed string, ignoreCrawlDelay bool) map[string][]string {
+/* Crawls the website starting from the given seed URL and returns a map that maps a page URL to the words found on the page. If idx is not nil, crawl will also build the index */
+func crawl(seed string, ignoreCrawlDelay bool, idx *Index) map[string][]string {
 	q := make([]string, 0)
 	q = append(q, seed)
 	visitedSet := make(map[string]struct{})
@@ -56,6 +56,12 @@ func crawl(seed string, ignoreCrawlDelay bool) map[string][]string {
 		}
 
 		mp[url] = append(mp[url], words...)
+
+		if idx != nil {
+			for _, word := range words {
+				(*idx).Increment(word, url)
+			}
+		}
 
 		cleanedHrefs := cleanHrefs(host, hrefs)
 		for _, href := range cleanedHrefs {

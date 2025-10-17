@@ -13,16 +13,14 @@ func startServer(indexType IndexType, ignoreCrawlDelay bool) Index {
 	go http.ListenAndServe(":8080", nil)
 
 	// Crawl the top 10 pages and build the index
-	fmt.Println("Crawling...")
-	mp := crawl("http://localhost:8080/top10", ignoreCrawlDelay)
-
-	fmt.Println("Building index...")
+	fmt.Println("Crawling and building index...")
 	var idx Index
 	if indexType == IN_MEM {
-		idx = NewIndexInMemory(mp)
+		idx = NewIndexInMemory()
 	} else {
-		idx = NewIndexSQLite(mp)
+		idx = NewIndexSQLite()
 	}
+	crawl("http://localhost:8080/top10", ignoreCrawlDelay, &idx)
 
 	fmt.Println("Done\nhttp://localhost:8080/")
 

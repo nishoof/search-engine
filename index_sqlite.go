@@ -2,7 +2,6 @@ package main
 
 import (
 	"database/sql"
-	"fmt"
 
 	"github.com/kljensen/snowball"
 	_ "github.com/mattn/go-sqlite3"
@@ -147,7 +146,6 @@ func (idx IndexSQLite) Increment(word, documentName string) {
 	documentId := getDocumentId(db, documentName)
 	if documentId == -1 {
 		// document doesn't exist, so add it to the documents table
-		fmt.Printf("New document %s\n", documentName)
 		_, err := db.Exec(`
 			INSERT INTO documents(name, word_count) VALUES(?, 0)
 		`, documentName)

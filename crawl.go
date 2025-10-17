@@ -7,8 +7,8 @@ import (
 	"time"
 )
 
-/* Crawls the website starting from the given seed URL and returns a map that maps a page URL to the words found on the page. If idx is not nil, crawl will also build the index */
-func crawl(seed string, ignoreCrawlDelay bool, idx *Index) map[string][]string {
+/* Crawls the website starting from the given seed URL and returns a map that maps a page URL to the words found on the page. fastMode ignores crawl-delay and prints less. If idx is not nil, crawl will also build the index */
+func crawl(seed string, fastMode bool, idx *Index) map[string][]string {
 	q := make([]string, 0)
 	q = append(q, seed)
 	visitedSet := make(map[string]struct{})
@@ -24,13 +24,9 @@ func crawl(seed string, ignoreCrawlDelay bool, idx *Index) map[string][]string {
 		panic(err)
 	}
 	rules := parseRobotsTxt(robotsTxtUrl)
-	if ignoreCrawlDelay {
+	if fastMode {
 		rules.SetCrawlDelay(0)
 	}
-
-	fmt.Printf("seed: %s\n", seed)
-	fmt.Printf("host: %s\n", host)
-	fmt.Printf("robotsTxtUrl: %s\n", robotsTxtUrl)
 
 	for len(q) > 0 {
 		url := q[0]
@@ -41,7 +37,10 @@ func crawl(seed string, ignoreCrawlDelay bool, idx *Index) map[string][]string {
 			continue // skip urls disallowed by robots.txt
 		}
 
-		fmt.Printf("crawling %s\n", url)
+		if !fastMode {
+			fmt.Printf("crawling %s\n", url)
+		}
+
 		body := download(url)
 		time.Sleep(rules.crawlDelay)
 		if body == nil {

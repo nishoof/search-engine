@@ -103,6 +103,8 @@ func builder(pageCh chan Extracted, idx *Index, wg *sync.WaitGroup, inProgCh cha
 
 	for page := range pageCh {
 		if idx == nil {
+			wg.Done()
+			<-inProgCh
 			continue
 		}
 		url := page.url

@@ -72,7 +72,7 @@ func NewIndexSQLite() IndexSQLite {
 	preparedStatements.getDocumentId, err = db.Prepare(`SELECT id FROM documents WHERE name = ?;`)
 	checkErr(err)
 
-	idx := IndexSQLite{db, preparedStatements, make([]Frequency, 1000)}
+	idx := IndexSQLite{db, preparedStatements, make([]Frequency, 0, 100000)}
 
 	return idx
 }
@@ -158,7 +158,7 @@ func (idx IndexSQLite) GetWordCount(documentName string) int {
 	return wordCount
 }
 
-func (idx IndexSQLite) Increment(word, documentName string, count int) {
+func (idx *IndexSQLite) Increment(word, documentName string, count int) {
 	// get the wordId
 	wordId := getWordId(idx.preparedStatements, word)
 	if wordId == -1 {
@@ -181,7 +181,7 @@ func (idx IndexSQLite) Increment(word, documentName string, count int) {
 
 	// update frequency
 	idx.pendingFrequencies = append(idx.pendingFrequencies, Frequency{wordId, documentId, count})
-	if len(idx.pendingFrequencies) == 1000 {
+	if len(idx.pendingFrequencies) >= 100000 {
 		idx.Flush()
 	}
 
@@ -192,16 +192,22 @@ func (idx IndexSQLite) Increment(word, documentName string, count int) {
 	checkErr(err)
 }
 
-func (idx IndexSQLite) Flush() {
+func (idx *IndexSQLite) Flush() {
+	if len(idx.pendingFrequencies) == 0 {
+		return
+	}
+
 	tx, err := idx.db.Begin()
 	checkErr(err)
 
+	stmt := idx.preparedStatements.addFreq
 	for _, pf := range idx.pendingFrequencies {
-		stmt := idx.preparedStatements.addFreq
 		tx.Stmt(stmt).Exec(pf.wordId, pf.documentId, pf.count)
 	}
 
 	tx.Commit()
+
+	idx.pendingFrequencies = idx.pendingFrequencies[:0]
 }
 
 func initTables(db *sql.DB) {

@@ -18,7 +18,8 @@ func startServer(indexType IndexType, fastMode bool) Index {
 	if indexType == IN_MEM {
 		idx = NewIndexInMemory()
 	} else {
-		idx = NewIndexSQLite()
+		sqliteIdx := NewIndexSQLite()
+		idx = &sqliteIdx
 	}
 	crawl("http://localhost:8080/top10", fastMode, &idx)
 	// crawl("https://www.usfca.edu/", fastMode, &idx)

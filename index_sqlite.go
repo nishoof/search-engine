@@ -9,6 +9,7 @@ import (
 type IndexSQLite struct {
 	db                 *sql.DB
 	preparedStatements PreparedStatements
+	pendingFrequencies []Frequency
 }
 
 type PreparedStatements struct {
@@ -24,6 +25,10 @@ type PreparedStatements struct {
 	updateWordCount    *sql.Stmt
 	getWordId          *sql.Stmt
 	getDocumentId      *sql.Stmt
+}
+
+type Frequency struct {
+	wordId, documentId, count int
 }
 
 func checkErr(err error) {
@@ -64,7 +69,7 @@ func NewIndexSQLite() IndexSQLite {
 	preparedStatements.getDocumentId, err = db.Prepare(`SELECT id FROM documents WHERE name = ?;`)
 	checkErr(err)
 
-	idx := IndexSQLite{db, preparedStatements}
+	idx := IndexSQLite{db, preparedStatements, make([]Frequency, 1000)}
 
 	return idx
 }
@@ -172,19 +177,28 @@ func (idx IndexSQLite) Increment(word, documentName string, count int) {
 	}
 
 	// update frequency
-	stmt := idx.preparedStatements.addFreq
-	_, err := stmt.Exec(wordId, documentId, count)
-	checkErr(err)
+	idx.pendingFrequencies = append(idx.pendingFrequencies, Frequency{wordId, documentId, count})
+	if len(idx.pendingFrequencies) == 1000 {
+		idx.Flush()
+	}
 
 	// update word count
 	wordCount := idx.GetWordCount(documentName)
-	stmt = idx.preparedStatements.updateWordCount
-	_, err = stmt.Exec(wordCount+count, documentId)
+	stmt := idx.preparedStatements.updateWordCount
+	_, err := stmt.Exec(wordCount+count, documentId)
 	checkErr(err)
 }
 
-func (idx IndexSQLite) Close() {
-	idx.db.Close()
+func (idx IndexSQLite) Flush() {
+	tx, err := idx.db.Begin()
+	checkErr(err)
+
+	for _, pf := range idx.pendingFrequencies {
+		stmt := idx.preparedStatements.addFreq
+		tx.Stmt(stmt).Exec(pf.wordId, pf.documentId, pf.count)
+	}
+
+	tx.Commit()
 }
 
 func initTables(db *sql.DB) {

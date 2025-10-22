@@ -193,6 +193,10 @@ func crawl(seed string, fastMode bool, idx *Index) {
 	readyCh <- true
 	wg.Wait()
 
+	if idx != nil {
+		(*idx).Flush()
+	}
+
 	endTime := time.Now()
 	duration := endTime.Sub(startTime).Seconds()
 	numUrls := len(visitedSet)

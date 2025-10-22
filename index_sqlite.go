@@ -41,6 +41,9 @@ func NewIndexSQLite() IndexSQLite {
 	db, err := sql.Open("sqlite3", "db.db")
 	checkErr(err)
 
+	_, err = db.Exec(`PRAGMA journal_mode=OFF;`)
+	checkErr(err)
+
 	initTables(db)
 
 	var preparedStatements PreparedStatements

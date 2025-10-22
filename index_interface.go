@@ -11,5 +11,5 @@ type Index interface {
 	GetNumDocs() int
 	GetNumDocsWithWord(word string) int
 	GetWordCount(documentName string) int
-	Increment(word, documentName string)
+	Increment(word, documentName string, count int)
 }

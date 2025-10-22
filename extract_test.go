@@ -9,11 +9,13 @@ import (
 
 func TestExtract(t *testing.T) {
 	tests := []struct {
-		testData, wantWords, wantHrefs []string
+		testData  []string
+		wantWords map[string]int
+		wantHrefs []string
 	}{
-		{testData[1], []string{"272", "links"}, []string{}},
-		{testData[2], []string{"simple", "simple"}, []string{"/test-data/search-engine/simple.html"}},
-		{testData[3], []string{"style", "blue", "link", "href", "red", "link", "simple"}, []string{"/test-data/search-engine/href.html", "/test-data/search-engine/simple.html"}},
+		{testData[1], map[string]int{"272": 1, "link": 1}, []string{}},
+		{testData[2], map[string]int{"simpl": 2}, []string{"/test-data/search-engine/simple.html"}},
+		{testData[3], map[string]int{"style": 1, "blue": 1, "link": 2, "href": 1, "red": 1, "simpl": 1}, []string{"/test-data/search-engine/href.html", "/test-data/search-engine/simple.html"}},
 	}
 
 	for testIdx, test := range tests {

@@ -16,7 +16,7 @@ type Downloaded struct {
 
 type Extracted struct {
 	url   string
-	words []string
+	words map[string]int
 }
 
 func manager(urlCh chan string, downloadableUrlCh chan string, visitedSet map[string]struct{}, rules *RobotsRules, fastMode bool, wg *sync.WaitGroup, inProgCh chan bool) {
@@ -109,8 +109,8 @@ func builder(pageCh chan Extracted, idx *Index, wg *sync.WaitGroup, inProgCh cha
 		}
 		url := page.url
 		words := page.words
-		for _, word := range words {
-			(*idx).Increment(word, url)
+		for word, count := range words {
+			(*idx).Increment(word, url, count)
 		}
 		wg.Done()
 		<-inProgCh

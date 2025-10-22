@@ -3,7 +3,6 @@ package main
 import (
 	"database/sql"
 
-	"github.com/kljensen/snowball"
 	_ "github.com/mattn/go-sqlite3"
 )
 
@@ -22,7 +21,6 @@ type PreparedStatements struct {
 	addWord            *sql.Stmt
 	addDoc             *sql.Stmt
 	addFreq            *sql.Stmt
-	updateFreq         *sql.Stmt
 	updateWordCount    *sql.Stmt
 	getWordId          *sql.Stmt
 	getDocumentId      *sql.Stmt
@@ -57,9 +55,7 @@ func NewIndexSQLite() IndexSQLite {
 	checkErr(err)
 	preparedStatements.addDoc, err = db.Prepare(`INSERT INTO documents(name, word_count) VALUES(?, 0);`)
 	checkErr(err)
-	preparedStatements.addFreq, err = db.Prepare(`INSERT INTO frequencies(word_id, doc_id, count) VALUES(?, ?, 1);`)
-	checkErr(err)
-	preparedStatements.updateFreq, err = db.Prepare(`UPDATE frequencies SET count = ? WHERE id = ?;`)
+	preparedStatements.addFreq, err = db.Prepare(`INSERT INTO frequencies(word_id, doc_id, count) VALUES(?, ?, ?);`)
 	checkErr(err)
 	preparedStatements.updateWordCount, err = db.Prepare(`UPDATE documents SET word_count = ? WHERE id = ?;`)
 	checkErr(err)
@@ -154,12 +150,7 @@ func (idx IndexSQLite) GetWordCount(documentName string) int {
 	return wordCount
 }
 
-func (idx IndexSQLite) Increment(word, documentName string) {
-	word, err := snowball.Stem(word, "english", true)
-	if err != nil {
-		panic(err)
-	}
-
+func (idx IndexSQLite) Increment(word, documentName string, count int) {
 	// get the wordId
 	wordId := getWordId(idx.preparedStatements, word)
 	if wordId == -1 {
@@ -181,23 +172,14 @@ func (idx IndexSQLite) Increment(word, documentName string) {
 	}
 
 	// update frequency
-	frequencyId, frequencyCount := getFrequency(idx.preparedStatements, wordId, documentId)
-	if frequencyId == -1 {
-		// frequency doesn't exist (first occurrence of this word in this document), so add it to the frequencies table
-		stmt := idx.preparedStatements.addFreq
-		_, err := stmt.Exec(wordId, documentId)
-		checkErr(err)
-	} else {
-		// frequency already exists, we need to update it now
-		stmt := idx.preparedStatements.updateFreq
-		_, err := stmt.Exec(frequencyCount+1, frequencyId)
-		checkErr(err)
-	}
+	stmt := idx.preparedStatements.addFreq
+	_, err := stmt.Exec(wordId, documentId, count)
+	checkErr(err)
 
 	// update word count
 	wordCount := idx.GetWordCount(documentName)
-	stmt := idx.preparedStatements.updateWordCount
-	_, err = stmt.Exec(wordCount+1, documentId)
+	stmt = idx.preparedStatements.updateWordCount
+	_, err = stmt.Exec(wordCount+count, documentId)
 	checkErr(err)
 }
 

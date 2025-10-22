@@ -1,9 +1,5 @@
 package main
 
-import (
-	"github.com/kljensen/snowball"
-)
-
 type IndexInMemory struct {
 	frequency map[string]map[string]int // maps words to their FrequencyMap
 	wordCount map[string]int            // maps document names to their word counts
@@ -51,14 +47,11 @@ func (idx IndexInMemory) GetWordCount(documentName string) int {
 	return idx.wordCount[documentName]
 }
 
-func (idx IndexInMemory) Increment(word, documentName string) {
-	word, err := snowball.Stem(word, "english", true)
-	if err != nil {
-		panic(err)
-	}
-	if _, exists := idx.frequency[word]; !exists {
+func (idx IndexInMemory) Increment(word, documentName string, count int) {
+	_, exists := idx.frequency[word]
+	if !exists {
 		idx.frequency[word] = make(map[string]int)
 	}
-	idx.frequency[word][documentName]++
-	idx.wordCount[documentName]++
+	idx.frequency[word][documentName] += count
+	idx.wordCount[documentName] += count
 }

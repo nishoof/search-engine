@@ -20,8 +20,8 @@ func startServer(indexType IndexType, fastMode bool) Index {
 	} else {
 		idx = NewIndexSQLite()
 	}
-	// crawl("http://localhost:8080/top10", fastMode, &idx)
-	crawl("https://www.usfca.edu/", fastMode, &idx)
+	crawl("http://localhost:8080/top10", fastMode, &idx)
+	// crawl("https://www.usfca.edu/", fastMode, &idx)
 
 	fmt.Println("Done\nhttp://localhost:8080/")
 

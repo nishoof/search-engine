@@ -55,3 +55,5 @@ func (idx IndexInMemory) Increment(word, documentName string, count int) {
 	idx.frequency[word][documentName] += count
 	idx.wordCount[documentName] += count
 }
+
+func (idx IndexInMemory) Flush() {}

@@ -8,7 +8,24 @@ import (
 )
 
 type IndexSQLite struct {
-	db *sql.DB
+	db                 *sql.DB
+	preparedStatements PreparedStatements
+}
+
+type PreparedStatements struct {
+	getDocs            *sql.Stmt
+	getFreqCount       *sql.Stmt
+	getFreqIdCount     *sql.Stmt
+	getNumDocs         *sql.Stmt
+	getNumDocsWithWord *sql.Stmt
+	getWordCount       *sql.Stmt
+	addWord            *sql.Stmt
+	addDoc             *sql.Stmt
+	addFreq            *sql.Stmt
+	updateFreq         *sql.Stmt
+	updateWordCount    *sql.Stmt
+	getWordId          *sql.Stmt
+	getDocumentId      *sql.Stmt
 }
 
 func checkErr(err error) {
@@ -22,17 +39,43 @@ func NewIndexSQLite() IndexSQLite {
 	checkErr(err)
 
 	initTables(db)
-	idx := IndexSQLite{db}
+
+	var preparedStatements PreparedStatements
+	preparedStatements.getDocs, err = db.Prepare(`SELECT name FROM documents;`)
+	checkErr(err)
+	preparedStatements.getFreqCount, err = db.Prepare(`SELECT count FROM frequencies WHERE word_id = ? AND doc_id = ?;`)
+	checkErr(err)
+	preparedStatements.getFreqIdCount, err = db.Prepare(`SELECT id, count FROM frequencies WHERE word_id = ? AND doc_id = ?;`)
+	checkErr(err)
+	preparedStatements.getNumDocs, err = db.Prepare(`SELECT COUNT(*) FROM documents;`)
+	checkErr(err)
+	preparedStatements.getNumDocsWithWord, err = db.Prepare(`SELECT COUNT(*) FROM frequencies WHERE word_id = ?;`)
+	checkErr(err)
+	preparedStatements.getWordCount, err = db.Prepare(`SELECT word_count FROM documents WHERE id = ?;`)
+	checkErr(err)
+	preparedStatements.addWord, err = db.Prepare(`INSERT INTO words(word) VALUES(?);`)
+	checkErr(err)
+	preparedStatements.addDoc, err = db.Prepare(`INSERT INTO documents(name, word_count) VALUES(?, 0);`)
+	checkErr(err)
+	preparedStatements.addFreq, err = db.Prepare(`INSERT INTO frequencies(word_id, doc_id, count) VALUES(?, ?, 1);`)
+	checkErr(err)
+	preparedStatements.updateFreq, err = db.Prepare(`UPDATE frequencies SET count = ? WHERE id = ?;`)
+	checkErr(err)
+	preparedStatements.updateWordCount, err = db.Prepare(`UPDATE documents SET word_count = ? WHERE id = ?;`)
+	checkErr(err)
+	preparedStatements.getWordId, err = db.Prepare(`SELECT id FROM words WHERE word = ?;`)
+	checkErr(err)
+	preparedStatements.getDocumentId, err = db.Prepare(`SELECT id FROM documents WHERE name = ?;`)
+	checkErr(err)
+
+	idx := IndexSQLite{db, preparedStatements}
 
 	return idx
 }
 
 func (idx IndexSQLite) GetDocs() []string {
-	db := idx.db
-
-	rows, err := db.Query(`
-		SELECT name FROM documents;
-	`)
+	stmt := idx.preparedStatements.getDocs
+	rows, err := stmt.Query()
 	checkErr(err)
 	defer rows.Close()
 
@@ -46,21 +89,18 @@ func (idx IndexSQLite) GetDocs() []string {
 }
 
 func (idx IndexSQLite) GetFrequency(word, documentName string) int {
-	db := idx.db
-
-	wordId := getWordId(db, word)
+	wordId := getWordId(idx.preparedStatements, word)
 	if wordId == -1 {
 		return 0 // word doesn't occur in any document
 	}
 
-	documentId := getDocumentId(db, documentName)
+	documentId := getDocumentId(idx.preparedStatements, documentName)
 	if documentId == -1 {
 		return 0 // document doesn't exist
 	}
 
-	rows, err := db.Query(`
-		SELECT count FROM frequencies WHERE word_id = ? AND doc_id = ?
-	`, wordId, documentId)
+	stmt := idx.preparedStatements.getFreqCount
+	rows, err := stmt.Query(wordId, documentId)
 	checkErr(err)
 	defer rows.Close()
 
@@ -75,11 +115,8 @@ func (idx IndexSQLite) GetFrequency(word, documentName string) int {
 }
 
 func (idx IndexSQLite) GetNumDocs() int {
-	db := idx.db
-
-	row := db.QueryRow(`
-		SELECT COUNT(*) FROM documents
-	`)
+	stmt := idx.preparedStatements.getNumDocs
+	row := stmt.QueryRow()
 
 	var count int
 	err := row.Scan(&count)
@@ -88,16 +125,13 @@ func (idx IndexSQLite) GetNumDocs() int {
 }
 
 func (idx IndexSQLite) GetNumDocsWithWord(word string) int {
-	db := idx.db
-
-	wordId := getWordId(db, word)
+	wordId := getWordId(idx.preparedStatements, word)
 	if wordId == -1 {
 		return 0 // the word doesn't occur in any documents
 	}
 
-	row := db.QueryRow(`
-		SELECT COUNT(*) FROM frequencies WHERE word_id = ?
-	`, wordId)
+	stmt := idx.preparedStatements.getNumDocsWithWord
+	row := stmt.QueryRow(wordId)
 
 	var numDocs int
 	err := row.Scan(&numDocs)
@@ -106,16 +140,13 @@ func (idx IndexSQLite) GetNumDocsWithWord(word string) int {
 }
 
 func (idx IndexSQLite) GetWordCount(documentName string) int {
-	db := idx.db
-
-	documentId := getDocumentId(db, documentName)
+	documentId := getDocumentId(idx.preparedStatements, documentName)
 	if documentId == -1 {
 		return 0
 	}
 
-	row := db.QueryRow(`
-		SELECT word_count FROM documents WHERE id = ?;
-	`, documentId)
+	stmt := idx.preparedStatements.getWordCount
+	row := stmt.QueryRow(documentId)
 
 	var wordCount int
 	err := row.Scan(&wordCount)
@@ -124,56 +155,49 @@ func (idx IndexSQLite) GetWordCount(documentName string) int {
 }
 
 func (idx IndexSQLite) Increment(word, documentName string) {
-	db := idx.db
-
 	word, err := snowball.Stem(word, "english", true)
 	if err != nil {
 		panic(err)
 	}
 
 	// get the wordId
-	wordId := getWordId(db, word)
+	wordId := getWordId(idx.preparedStatements, word)
 	if wordId == -1 {
 		// word doesn't occur in any document, so add it to the words table
-		_, err := db.Exec(`
-			INSERT INTO words(word) VALUES(?);
-		`, word)
+		stmt := idx.preparedStatements.addWord
+		_, err := stmt.Exec(word)
 		checkErr(err)
-		wordId = getWordId(db, word)
+		wordId = getWordId(idx.preparedStatements, word)
 	}
 
 	// get the documentId
-	documentId := getDocumentId(db, documentName)
+	documentId := getDocumentId(idx.preparedStatements, documentName)
 	if documentId == -1 {
 		// document doesn't exist, so add it to the documents table
-		_, err := db.Exec(`
-			INSERT INTO documents(name, word_count) VALUES(?, 0)
-		`, documentName)
+		stmt := idx.preparedStatements.addDoc
+		_, err := stmt.Exec(documentName)
 		checkErr(err)
-		documentId = getDocumentId(db, documentName)
+		documentId = getDocumentId(idx.preparedStatements, documentName)
 	}
 
 	// update frequency
-	frequencyId, frequencyCount := getFrequency(db, wordId, documentId)
+	frequencyId, frequencyCount := getFrequency(idx.preparedStatements, wordId, documentId)
 	if frequencyId == -1 {
 		// frequency doesn't exist (first occurrence of this word in this document), so add it to the frequencies table
-		_, err := db.Exec(`
-			INSERT INTO frequencies(word_id, doc_id, count) VALUES(?, ?, 1)
-		`, wordId, documentId)
+		stmt := idx.preparedStatements.addFreq
+		_, err := stmt.Exec(wordId, documentId)
 		checkErr(err)
 	} else {
 		// frequency already exists, we need to update it now
-		_, err := db.Exec(`
-			UPDATE frequencies SET count = ? WHERE id = ?
-		`, frequencyCount+1, frequencyId)
+		stmt := idx.preparedStatements.updateFreq
+		_, err := stmt.Exec(frequencyCount+1, frequencyId)
 		checkErr(err)
 	}
 
 	// update word count
 	wordCount := idx.GetWordCount(documentName)
-	_, err = db.Exec(`
-		UPDATE documents SET word_count = ? WHERE id = ?
-	`, wordCount+1, documentId)
+	stmt := idx.preparedStatements.updateWordCount
+	_, err = stmt.Exec(wordCount+1, documentId)
 	checkErr(err)
 }
 
@@ -224,10 +248,9 @@ func initTables(db *sql.DB) {
 	checkErr(err)
 }
 
-func getWordId(db *sql.DB, word string) int {
-	rows, err := db.Query(`
-		SELECT id FROM words WHERE word = ?;
-	`, word)
+func getWordId(preparedStatements PreparedStatements, word string) int {
+	stmt := preparedStatements.getWordId
+	rows, err := stmt.Query(word)
 	checkErr(err)
 	defer rows.Close()
 
@@ -240,10 +263,9 @@ func getWordId(db *sql.DB, word string) int {
 	return -1
 }
 
-func getDocumentId(db *sql.DB, documentName string) int {
-	rows, err := db.Query(`
-		SELECT id FROM documents WHERE name = ?;
-	`, documentName)
+func getDocumentId(preparedStatements PreparedStatements, documentName string) int {
+	stmt := preparedStatements.getDocumentId
+	rows, err := stmt.Query(documentName)
 	checkErr(err)
 	defer rows.Close()
 
@@ -256,10 +278,9 @@ func getDocumentId(db *sql.DB, documentName string) int {
 	return -1
 }
 
-func getFrequency(db *sql.DB, wordId, documentId int) (int, int) {
-	rows, err := db.Query(`
-		SELECT id, count FROM frequencies WHERE word_id = ? AND doc_id = ?;
-	`, wordId, documentId)
+func getFrequency(preparedStatements PreparedStatements, wordId, documentId int) (int, int) {
+	stmt := preparedStatements.getFreqIdCount
+	rows, err := stmt.Query(wordId, documentId)
 	checkErr(err)
 	defer rows.Close()
 

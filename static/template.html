@@ -1,0 +1,16 @@
+<!DOCTYPE html>
+
+<html lang="en">
+  <body>
+    <h1>Search Results</h1>
+    <p>Search term: {{.Query}}</p>
+    <ol>
+      {{range .Results}}
+      <li>
+        <a href="{{.URL}}">{{.URL}}</a>
+        <div>Score: {{printf "%.4f" .Score}}</div>
+      </li>
+      {{end}}
+    </ol>
+  </body>
+</html>

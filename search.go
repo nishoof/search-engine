@@ -8,9 +8,9 @@ import (
 )
 
 type Result struct {
-	url         string
-	occurrences int
-	score       float32
+	URL         string
+	Occurrences int
+	Score       float32
 }
 
 type Results []Result
@@ -37,7 +37,7 @@ func Search(word string, idx Index) Results {
 
 	// Sort results by score
 	sort.Slice(results, func(i, j int) bool {
-		return results[i].score > results[j].score
+		return results[i].Score > results[j].Score
 	})
 
 	return results

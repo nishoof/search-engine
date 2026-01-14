@@ -3,6 +3,7 @@ package main
 import (
 	"flag"
 	"fmt"
+	"html/template"
 	"net/http"
 	"time"
 )
@@ -30,9 +31,25 @@ func startServer(indexType IndexType, fastMode bool) Index {
 	http.HandleFunc("/search", func(w http.ResponseWriter, r *http.Request) {
 		q := r.URL.Query().Get("q")
 		results := Search(q, idx)
-		fmt.Fprintf(w, "search term: %s\n\n", q)
-		for i, result := range results {
-			fmt.Fprintf(w, "rank %3d\tscore: %f, occurrences: %d,\turl: %s\n", i+1, result.score, result.occurrences, result.url)
+		t, err := template.ParseFiles("./static/template.html")
+		if err != nil {
+			http.Error(w, "Error loading template", http.StatusInternalServerError)
+			fmt.Println("Template error:", err)
+			return
+		}
+
+		type SearchResults struct {
+			Query   string
+			Results []Result
+		}
+		searchResults := SearchResults{
+			Query:   q,
+			Results: results,
+		}
+
+		err = t.Execute(w, searchResults)
+		if err != nil {
+			panic(err)
 		}
 	})
 

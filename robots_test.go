@@ -20,8 +20,8 @@ func TestDisallow(t *testing.T) {
 	disallow := "chap21.html"
 
 	for _, result := range got {
-		if strings.Contains(result.url, disallow) {
-			t.Errorf("%s is in results when searching \"blood\"but it contains %s\n", result.url, disallow)
+		if strings.Contains(result.URL, disallow) {
+			t.Errorf("%s is in results when searching \"blood\"but it contains %s\n", result.URL, disallow)
 		}
 	}
 }

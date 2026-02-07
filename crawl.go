@@ -17,6 +17,7 @@ type Downloaded struct {
 type Extracted struct {
 	url   string
 	words map[string]int
+	title string
 }
 
 func manager(urlCh chan string, downloadableUrlCh chan string, visitedSet map[string]struct{}, rules *RobotsRules, fastMode bool, wg *sync.WaitGroup, inProgCh chan bool) {
@@ -82,11 +83,11 @@ func extractor(bodyCh chan Downloaded, pageCh chan Extracted, dirtyUrlCh chan st
 		body := downloaded.body
 
 		reader := bufio.NewReader(body)
-		words, hrefs := extract(reader, stopper)
+		words, hrefs, title := extract(reader, stopper)
 		body.Close()
 
 		if words != nil {
-			page := Extracted{url, words}
+			page := Extracted{url, words, title}
 			pageCh <- page
 		}
 
@@ -107,10 +108,9 @@ func builder(pageCh chan Extracted, idx *Index, wg *sync.WaitGroup, inProgCh cha
 			<-inProgCh
 			continue
 		}
-		url := page.url
-		words := page.words
-		for word, count := range words {
-			(*idx).Increment(word, url, count)
+		(*idx).AddDoc(page.url, page.title)
+		for word, count := range page.words {
+			(*idx).Increment(word, page.url, count)
 		}
 		wg.Done()
 		<-inProgCh
@@ -119,7 +119,7 @@ func builder(pageCh chan Extracted, idx *Index, wg *sync.WaitGroup, inProgCh cha
 	fmt.Println("Builder ended")
 }
 
-func adder(dirtyUrlCh chan string, urlCh chan string, host string, wg *sync.WaitGroup, inProgCh chan bool) {
+func adder(dirtyUrlCh chan string, urlCh chan string, host string, wg *sync.WaitGroup) {
 	fmt.Println("Adder started")
 
 	for dirtyUrl := range dirtyUrlCh {
@@ -187,7 +187,7 @@ func crawl(seed string, fastMode bool, idx *Index) {
 	}
 	go extractor(bodyCh, pageCh, dirtyUrlCh)
 	go builder(pageCh, idx, &wg, inProgCh)
-	go adder(dirtyUrlCh, urlCh, host, &wg, inProgCh)
+	go adder(dirtyUrlCh, urlCh, host, &wg)
 
 	urlCh <- seed
 	readyCh <- true

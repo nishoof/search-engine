@@ -1,13 +1,17 @@
 <!DOCTYPE html>
 
 <html lang="en">
+  <head>
+    <meta charset="utf-8" />
+    <title>Search Results</title>
+  </head>
   <body>
     <h1>Search Results</h1>
     <p>Search term: {{.Query}}</p>
     <ol>
       {{range .Results}}
       <li>
-        <a href="{{.URL}}">{{.URL}}</a>
+        <a href="{{.URL}}">{{.Title}}</a>
         <div>Score: {{printf "%.4f" .Score}}</div>
       </li>
       {{end}}

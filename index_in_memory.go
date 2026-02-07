@@ -1,15 +1,28 @@
 package main
 
 type IndexInMemory struct {
-	frequency map[string]map[string]int // maps words to their FrequencyMap
-	wordCount map[string]int            // maps document names to their word counts
+	frequency      map[string]map[string]int // maps words to their FrequencyMap
+	wordCount      map[string]int            // maps document names to their word counts
+	documentTitles map[string]string         // maps document names to their titles
 }
 
 func NewIndexInMemory() IndexInMemory {
 	idx := new(IndexInMemory)
 	idx.frequency = make(map[string]map[string]int)
 	idx.wordCount = make(map[string]int)
+	idx.documentTitles = make(map[string]string)
 	return *idx
+}
+
+func (idx IndexInMemory) AddDoc(documentName, title string) {
+	if title == "" {
+		title = documentName
+	}
+	_, exists := idx.wordCount[documentName]
+	if !exists {
+		idx.wordCount[documentName] = 0
+	}
+	idx.documentTitles[documentName] = title
 }
 
 func (idx IndexInMemory) GetDocs() []string {
@@ -41,6 +54,10 @@ func (idx IndexInMemory) GetNumDocsWithWord(word string) int {
 		return 0
 	}
 	return len(fm)
+}
+
+func (idx IndexInMemory) GetTitle(documentName string) string {
+	return idx.documentTitles[documentName]
 }
 
 func (idx IndexInMemory) GetWordCount(documentName string) int {

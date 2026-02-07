@@ -11,6 +11,7 @@ type Result struct {
 	URL         string
 	Occurrences int
 	Score       float32
+	Title       string
 }
 
 type Results []Result
@@ -31,8 +32,10 @@ func Search(word string, idx Index) Results {
 		if occurrences == 0 {
 			continue
 		}
-		tfidf := tfidf(word, url, idx.GetWordCount(url), numDocs, idx)
-		results = append(results, Result{url, occurrences, float32(tfidf)})
+		numWordsInDoc := idx.GetWordCount(url)
+		tfidf := tfidf(word, url, numWordsInDoc, numDocs, idx)
+		docTitle := idx.GetTitle(url)
+		results = append(results, Result{url, occurrences, float32(tfidf), docTitle})
 	}
 
 	// Sort results by score

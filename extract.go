@@ -11,31 +11,34 @@ import (
 	"golang.org/x/net/html/atom"
 )
 
-/* Extracts the relevant words and hrefs from the contents of a website represented as a Reader, returning words as a map from the word to its count and hrefs as a slice */
-func extract(reader *bufio.Reader, stopper *Stopper) (map[string]int, []string) {
+/* Extracts the relevant words and hrefs and the title from the contents of a website represented as a Reader. Returns words as a map from the word to its count, hrefs as a slice of strings, and the title as a string */
+func extract(reader *bufio.Reader, stopper *Stopper) (map[string]int, []string, string) {
 	tree, err := html.Parse(reader)
 	if err != nil {
 		fmt.Printf("Error parsing HTML: %v\n", err)
-		return nil, nil
+		return nil, nil, ""
 	}
 
 	words := make(map[string]int, 0)
 	hrefs := make([]string, 0)
-	extractDfsHelper(tree, &words, &hrefs, stopper)
-	return words, hrefs
+	title := ""
+	extractDfsHelper(tree, &words, &hrefs, &title, stopper)
+	return words, hrefs, title
 }
 
 /* Does a recursive dfs on the HTML node tree, extracting relevant words and hrefs into the given structures, and skipping nodes that we don't want (such as style) */
-func extractDfsHelper(node *html.Node, words *map[string]int, hrefs *[]string, stopper *Stopper) {
+func extractDfsHelper(node *html.Node, words *map[string]int, hrefs *[]string, title *string, stopper *Stopper) {
 	if node.Type == html.TextNode {
 		extractWords(node, words, stopper)
 	} else if node.Type == html.ElementNode && node.DataAtom == atom.A {
 		extractHrefs(node, hrefs)
+	} else if node.Type == html.ElementNode && node.DataAtom == atom.Title {
+		*title = node.FirstChild.Data
 	} else if node.Type == html.ElementNode && (node.DataAtom == atom.Style || node.DataAtom == atom.Script) {
 		return // skip the <style> and <script> subtrees
 	}
 	for child := node.FirstChild; child != nil; child = child.NextSibling {
-		extractDfsHelper(child, words, hrefs, stopper)
+		extractDfsHelper(child, words, hrefs, title, stopper)
 	}
 }
 

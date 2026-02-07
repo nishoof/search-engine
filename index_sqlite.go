@@ -25,6 +25,7 @@ type PreparedStatements struct {
 	updateWordCount    *sql.Stmt
 	getWordId          *sql.Stmt
 	getDocumentId      *sql.Stmt
+	getDocumentTitle   *sql.Stmt
 }
 
 type Frequency struct {
@@ -61,7 +62,7 @@ func NewIndexSQLite() IndexSQLite {
 	checkErr(err)
 	preparedStatements.addWord, err = db.Prepare(`INSERT INTO words(word) VALUES(?);`)
 	checkErr(err)
-	preparedStatements.addDoc, err = db.Prepare(`INSERT INTO documents(name, word_count) VALUES(?, 0);`)
+	preparedStatements.addDoc, err = db.Prepare(`INSERT INTO documents(name, title, word_count) VALUES(?, ?, 0);`)
 	checkErr(err)
 	preparedStatements.addFreq, err = db.Prepare(`INSERT INTO frequencies(word_id, doc_id, count) VALUES(?, ?, ?);`)
 	checkErr(err)
@@ -71,10 +72,21 @@ func NewIndexSQLite() IndexSQLite {
 	checkErr(err)
 	preparedStatements.getDocumentId, err = db.Prepare(`SELECT id FROM documents WHERE name = ?;`)
 	checkErr(err)
+	preparedStatements.getDocumentTitle, err = db.Prepare(`SELECT title FROM documents WHERE name = ?;`)
+	checkErr(err)
 
 	idx := IndexSQLite{db, preparedStatements, make([]Frequency, 0, 100000)}
 
 	return idx
+}
+
+func (idx IndexSQLite) AddDoc(documentName, title string) {
+	if title == "" {
+		title = documentName
+	}
+	stmt := idx.preparedStatements.addDoc
+	_, err := stmt.Exec(documentName, title)
+	checkErr(err)
 }
 
 func (idx IndexSQLite) GetDocs() []string {
@@ -143,6 +155,16 @@ func (idx IndexSQLite) GetNumDocsWithWord(word string) int {
 	return numDocs
 }
 
+func (idx IndexSQLite) GetTitle(documentName string) string {
+	stmt := idx.preparedStatements.getDocumentTitle
+	row := stmt.QueryRow(documentName)
+
+	var title string
+	err := row.Scan(&title)
+	checkErr(err)
+	return title
+}
+
 func (idx IndexSQLite) GetWordCount(documentName string) int {
 	documentId := getDocumentId(idx.preparedStatements, documentName)
 	if documentId == -1 {
@@ -172,11 +194,7 @@ func (idx *IndexSQLite) Increment(word, documentName string, count int) {
 	// get the documentId
 	documentId := getDocumentId(idx.preparedStatements, documentName)
 	if documentId == -1 {
-		// document doesn't exist, so add it to the documents table
-		stmt := idx.preparedStatements.addDoc
-		_, err := stmt.Exec(documentName)
-		checkErr(err)
-		documentId = getDocumentId(idx.preparedStatements, documentName)
+		panic("document " + documentName + " does not exist in the index")
 	}
 
 	// update frequency
@@ -215,6 +233,7 @@ func initTables(db *sql.DB) {
 		CREATE TABLE IF NOT EXISTS documents (
 			id INTEGER PRIMARY KEY,
 			name TEXT,
+			title TEXT,
 			word_count INTEGER
 		);
 	`)
@@ -270,30 +289,10 @@ func getWordId(preparedStatements PreparedStatements, word string) int {
 
 func getDocumentId(preparedStatements PreparedStatements, documentName string) int {
 	stmt := preparedStatements.getDocumentId
-	rows, err := stmt.Query(documentName)
+	row := stmt.QueryRow(documentName)
+
+	var id int
+	err := row.Scan(&id)
 	checkErr(err)
-	defer rows.Close()
-
-	for rows.Next() {
-		var id int
-		rows.Scan(&id)
-		return id
-	}
-
-	return -1
-}
-
-func getFrequency(preparedStatements PreparedStatements, wordId, documentId int) (int, int) {
-	stmt := preparedStatements.getFreqIdCount
-	rows, err := stmt.Query(wordId, documentId)
-	checkErr(err)
-	defer rows.Close()
-
-	for rows.Next() {
-		var id, count int
-		rows.Scan(&id, &count)
-		return id, count
-	}
-
-	return -1, -1
+	return id
 }

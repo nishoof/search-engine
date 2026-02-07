@@ -31,6 +31,7 @@ func startServer(indexType IndexType, fastMode bool) Index {
 	http.HandleFunc("/search", func(w http.ResponseWriter, r *http.Request) {
 		q := r.URL.Query().Get("q")
 		results := Search(q, idx)
+
 		t, err := template.ParseFiles("./static/template.html")
 		if err != nil {
 			http.Error(w, "Error loading template", http.StatusInternalServerError)
@@ -38,16 +39,15 @@ func startServer(indexType IndexType, fastMode bool) Index {
 			return
 		}
 
-		type SearchResults struct {
+		templateData := struct {
 			Query   string
 			Results []Result
-		}
-		searchResults := SearchResults{
+		}{
 			Query:   q,
 			Results: results,
 		}
 
-		err = t.Execute(w, searchResults)
+		err = t.Execute(w, templateData)
 		if err != nil {
 			panic(err)
 		}

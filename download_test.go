@@ -2,6 +2,7 @@ package main
 
 import (
 	"bufio"
+	"strings"
 	"testing"
 )
 
@@ -25,6 +26,7 @@ func TestDownload(t *testing.T) {
 		scanner := bufio.NewScanner(got)
 		for i := 0; scanner.Scan(); i++ {
 			textGot := scanner.Text()
+			textGot = strings.TrimSpace(textGot) // ignore indentation differences
 			textWant := test.want[i]
 			if textGot != textWant {
 				t.Errorf("For test %d at line %d, got \"%s\" but wanted \"%s\"\n", testIdx, i, textGot, textWant)

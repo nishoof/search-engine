@@ -2,6 +2,7 @@ package main
 
 import (
 	"bufio"
+	"os"
 	"strings"
 	"testing"
 )
@@ -9,28 +10,46 @@ import (
 func TestDownload(t *testing.T) {
 	tests := []struct {
 		path string
-		want []string
 	}{
-		{testPaths[0], testData[0]},
-		{testPaths[1], testData[1]},
-		{testPaths[2], testData[2]},
+		{testdataPaths[0]},
+		{testdataPaths[1]},
+		{testdataPaths[2]},
 	}
 
 	ts := getTestServer()
 	defer ts.Close()
 
 	for testIdx, test := range tests {
-		got := download(ts.URL + test.path)
+		want, err := loadFileAsLines(test.path)
+		if err != nil {
+			t.Fatalf("Unable to load test data for test %d: %v", testIdx, err)
+		}
+
+		got := download(ts.URL + "/" + test.path)
 
 		// Read through the downloaded content line by line with a scanner and compare it to expected
 		scanner := bufio.NewScanner(got)
 		for i := 0; scanner.Scan(); i++ {
-			textGot := scanner.Text()
-			textGot = strings.TrimSpace(textGot) // ignore indentation differences
-			textWant := test.want[i]
+			textGot := strings.TrimSpace(scanner.Text()) // ignore indentation differences
+			textWant := want[i]
 			if textGot != textWant {
 				t.Errorf("For test %d at line %d, got \"%s\" but wanted \"%s\"\n", testIdx, i, textGot, textWant)
 			}
 		}
 	}
+}
+
+func loadFileAsLines(path string) ([]string, error) {
+	f, err := os.Open(path)
+	if err != nil {
+		return nil, err
+	}
+	defer f.Close()
+
+	var lines []string
+	scanner := bufio.NewScanner(f)
+	for scanner.Scan() {
+		lines = append(lines, strings.TrimSpace(scanner.Text()))
+	}
+	return lines, scanner.Err()
 }

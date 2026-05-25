@@ -2,28 +2,32 @@ package main
 
 import (
 	"bufio"
+	"bytes"
+	"os"
 	"reflect"
-	"strings"
 	"testing"
 )
 
 func TestExtract(t *testing.T) {
 	tests := []struct {
-		testData  []string
+		filepath  string
 		wantWords map[string]int
 		wantHrefs []string
 		wantTitle string
 	}{
-		{testData[1], map[string]int{"272": 1, "link": 1}, []string{}, ""},
-		{testData[2], map[string]int{"simpl": 2}, []string{"/testdata/simple/simple.html"}, ""},
-		{testData[3], map[string]int{"style": 1, "blue": 1, "link": 2, "href": 1, "red": 1, "simpl": 1}, []string{"/testdata/simple/href.html", "/testdata/simple/simple.html"}, "Style"},
+		{testdataPaths[1], map[string]int{"272": 1, "link": 1}, []string{}, ""},
+		{testdataPaths[2], map[string]int{"simpl": 2}, []string{"/testdata/simple/simple.html"}, ""},
+		{testdataPaths[3], map[string]int{"style": 1, "blue": 1, "link": 2, "href": 1, "red": 1, "simpl": 1}, []string{"/testdata/simple/href.html", "/testdata/simple/simple.html"}, "Style"},
 	}
 
 	for testIdx, test := range tests {
+		content, err := os.ReadFile(test.filepath)
+		if err != nil {
+			t.Fatalf("Unable to load test data for test %d: %v", testIdx, err)
+		}
+
 		stopper := NewStopper()
-		testFileStr := strings.Join(test.testData, "\n")
-		stringsReader := strings.NewReader(testFileStr)
-		bufioReader := bufio.NewReader(stringsReader)
+		bufioReader := bufio.NewReader(bytes.NewReader(content))
 		gotWords, gotHrefs, gotTitle := extract(bufioReader, stopper)
 
 		if !reflect.DeepEqual(gotWords, test.wantWords) {

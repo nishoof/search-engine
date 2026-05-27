@@ -23,7 +23,7 @@ func startServer(seed string, indexType IndexType, fastMode bool) Index {
 
 	// Handle requests to / (show a search bar)
 	http.HandleFunc("/", func(w http.ResponseWriter, r *http.Request) {
-		http.ServeFile(w, r, "./static/index.html")
+		http.ServeFile(w, r, "./templates/search-bar.html")
 	})
 
 	// Handle requests to /search (show the search results)
@@ -31,7 +31,7 @@ func startServer(seed string, indexType IndexType, fastMode bool) Index {
 		q := r.URL.Query().Get("q")
 		results := Search(q, idx)
 
-		t, err := template.ParseFiles("./static/template.html")
+		t, err := template.ParseFiles("./templates/results.html")
 		if err != nil {
 			http.Error(w, "Error loading template", http.StatusInternalServerError)
 			fmt.Println("Template error:", err)

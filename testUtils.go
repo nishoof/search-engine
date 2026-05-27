@@ -10,7 +10,7 @@ var simpleTestdataPaths = []string{
 	"testdata/simple/simple.html",
 	"testdata/simple/href.html",
 	"testdata/simple/style.html",
-}
+} // full path (including "testdata") is needed since TestDownload uses the path to find the file to compare against
 
 func getSimpleTestServer() *httptest.Server {
 	mux := http.NewServeMux()
@@ -20,9 +20,9 @@ func getSimpleTestServer() *httptest.Server {
 
 func getTop10TestServer() *httptest.Server {
 	mux := http.NewServeMux()
-	mux.Handle("/top10/", http.StripPrefix("/top10/", http.FileServer(http.Dir("static/top10"))))
+	mux.Handle("/top10/", http.StripPrefix("/top10/", http.FileServer(http.Dir("testdata/top10"))))
 	mux.HandleFunc("/robots.txt", func(w http.ResponseWriter, r *http.Request) {
-		http.ServeFile(w, r, "static/robots.txt")
+		http.ServeFile(w, r, "testdata/robots.txt")
 	})
 	return httptest.NewServer(mux)
 }

@@ -11,13 +11,12 @@ func TestDownload(t *testing.T) {
 	tests := []struct {
 		path string
 	}{
-		{testdataPaths[0]},
-		{testdataPaths[1]},
-		{testdataPaths[2]},
+		{simpleTestdataPaths[0]},
+		{simpleTestdataPaths[1]},
+		{simpleTestdataPaths[2]},
 	}
 
-	ts := getTestServer()
-	defer ts.Close()
+	tsURL := getSimpleTestServer().URL
 
 	for testIdx, test := range tests {
 		want, err := loadFileAsLines(test.path)
@@ -25,7 +24,7 @@ func TestDownload(t *testing.T) {
 			t.Fatalf("Unable to load test data for test %d: %v", testIdx, err)
 		}
 
-		got := download(ts.URL + "/" + test.path)
+		got := download(tsURL + "/" + test.path)
 
 		// Read through the downloaded content line by line with a scanner and compare it to expected
 		scanner := bufio.NewScanner(got)

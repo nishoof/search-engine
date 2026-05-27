@@ -5,17 +5,24 @@ import (
 	"net/http/httptest"
 )
 
-const testdataDir = "testdata/simple"
-
-var testdataPaths = []string{
-	testdataDir + "/index.html",
-	testdataDir + "/simple.html",
-	testdataDir + "/href.html",
-	testdataDir + "/style.html",
+var simpleTestdataPaths = []string{
+	"testdata/simple/index.html",
+	"testdata/simple/simple.html",
+	"testdata/simple/href.html",
+	"testdata/simple/style.html",
 }
 
-func getTestServer() *httptest.Server {
+func getSimpleTestServer() *httptest.Server {
 	mux := http.NewServeMux()
-	mux.Handle("/testdata/simple/", http.StripPrefix("/testdata/simple/", http.FileServer(http.Dir(testdataDir))))
+	mux.Handle("/testdata/simple/", http.StripPrefix("/testdata/simple/", http.FileServer(http.Dir("testdata/simple"))))
+	return httptest.NewServer(mux)
+}
+
+func getTop10TestServer() *httptest.Server {
+	mux := http.NewServeMux()
+	mux.Handle("/top10/", http.StripPrefix("/top10/", http.FileServer(http.Dir("static/top10"))))
+	mux.HandleFunc("/robots.txt", func(w http.ResponseWriter, r *http.Request) {
+		http.ServeFile(w, r, "static/robots.txt")
+	})
 	return httptest.NewServer(mux)
 }

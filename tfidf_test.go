@@ -12,7 +12,7 @@ func TestTfIdf(t *testing.T) {
 	}{
 		{
 			"blood",
-			"http://localhost:8080/top10/Dracula%20%7C%20Project%20Gutenberg/chap10.html",
+			top10TestServer.URL + "/top10/Dracula%20%7C%20Project%20Gutenberg/chap10.html",
 			1663, 331, 0.016404221154672147,
 		},
 	}

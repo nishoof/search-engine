@@ -15,9 +15,9 @@ func TestExtract(t *testing.T) {
 		wantHrefs []string
 		wantTitle string
 	}{
-		{testdataPaths[1], map[string]int{"272": 1, "link": 1}, []string{}, ""},
-		{testdataPaths[2], map[string]int{"simpl": 2}, []string{"/testdata/simple/simple.html"}, ""},
-		{testdataPaths[3], map[string]int{"style": 1, "blue": 1, "link": 2, "href": 1, "red": 1, "simpl": 1}, []string{"/testdata/simple/href.html", "/testdata/simple/simple.html"}, "Style"},
+		{simpleTestdataPaths[1], map[string]int{"272": 1, "link": 1}, []string{}, ""},
+		{simpleTestdataPaths[2], map[string]int{"simpl": 2}, []string{"/testdata/simple/simple.html"}, ""},
+		{simpleTestdataPaths[3], map[string]int{"style": 1, "blue": 1, "link": 2, "href": 1, "red": 1, "simpl": 1}, []string{"/testdata/simple/href.html", "/testdata/simple/simple.html"}, "Style"},
 	}
 
 	for testIdx, test := range tests {

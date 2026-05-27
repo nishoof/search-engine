@@ -1,2 +1,1 @@
-static/top10/**/*.html linguist-vendored
-test-data/**/*.html linguist-vendored
+testdata/**/*.html linguist-vendored

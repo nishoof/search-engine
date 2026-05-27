@@ -5,29 +5,29 @@ import (
 )
 
 func TestCrawl(t *testing.T) {
-	ts := getTestServer()
-	defer ts.Close()
+	tsURL := simpleTestServer.URL
 
-	seed := ts.URL + testPaths[0]
+	seed := tsURL + "/" + simpleTestdataPaths[0]
 	var idx Index = NewIndexInMemory()
 	crawl(seed, true, &idx)
+
 	tests := []struct {
 		word string
 		url  string
 		want int
 	}{
-		{"href", testPaths[0], 1},
-		{"272", testPaths[1], 1},
-		{"simpl", testPaths[2], 2}, // "simple" stems to "simpl"
-		{"style", testPaths[3], 1},
-		{"blue", testPaths[3], 1},
-		{"link", testPaths[3], 2},
-		{"red", testPaths[3], 1},
-		{"67", testPaths[0], 0},
+		{"href", simpleTestdataPaths[0], 1},
+		{"272", simpleTestdataPaths[1], 1},
+		{"simpl", simpleTestdataPaths[2], 2}, // "simple" stems to "simpl"
+		{"style", simpleTestdataPaths[3], 1},
+		{"blue", simpleTestdataPaths[3], 1},
+		{"link", simpleTestdataPaths[3], 2},
+		{"red", simpleTestdataPaths[3], 1},
+		{"67", simpleTestdataPaths[0], 0},
 	}
 
 	for _, test := range tests {
-		got := idx.GetFrequency(test.word, ts.URL+test.url)
+		got := idx.GetFrequency(test.word, tsURL+"/"+test.url)
 		if got != test.want {
 			t.Errorf("For word %q and url %q, got %d but wanted %d\n", test.word, test.url, got, test.want)
 		}

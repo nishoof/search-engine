@@ -8,12 +8,7 @@ import (
 	"time"
 )
 
-func startServer(indexType IndexType, fastMode bool) Index {
-	// Use http.Dir to serve the contents of ./static for GET requests
-	http.Handle("/", http.FileServer(http.Dir("./static")))
-	go http.ListenAndServe(":8080", nil)
-
-	// Crawl the top 10 pages and build the index
+func startServer(seed string, indexType IndexType, fastMode bool) Index {
 	fmt.Println("Crawling and building index...")
 	var idx Index
 	if indexType == IN_MEM {
@@ -22,17 +17,21 @@ func startServer(indexType IndexType, fastMode bool) Index {
 		sqliteIdx := NewIndexSQLite()
 		idx = &sqliteIdx
 	}
-	crawl("http://localhost:8080/top10", fastMode, &idx)
-	// crawl("https://www.usfca.edu/", fastMode, &idx)
+	crawl(seed, fastMode, &idx)
 
 	fmt.Println("Done\nhttp://localhost:8080/")
 
-	// Handle /search requests
+	// Handle requests to / (show a search bar)
+	http.HandleFunc("/", func(w http.ResponseWriter, r *http.Request) {
+		http.ServeFile(w, r, "./templates/search-bar.html")
+	})
+
+	// Handle requests to /search (show the search results)
 	http.HandleFunc("/search", func(w http.ResponseWriter, r *http.Request) {
 		q := r.URL.Query().Get("q")
 		results := Search(q, idx)
 
-		t, err := template.ParseFiles("./static/template.html")
+		t, err := template.ParseFiles("./templates/results.html")
 		if err != nil {
 			http.Error(w, "Error loading template", http.StatusInternalServerError)
 			fmt.Println("Template error:", err)
@@ -53,13 +52,20 @@ func startServer(indexType IndexType, fastMode bool) Index {
 		}
 	})
 
+	go http.ListenAndServe(":8080", nil)
+
 	return idx
 }
 
 func main() {
 	indexFlag := flag.String("index", "", "Specify which index to use: inmem or sqlite")
 	fastFlag := flag.Bool("fast", false, "Enable fast mode (ignores crawl-delay)")
+	seedFlag := flag.String("seed", "", "URL to crawl (e.g. https://nishilanand.com/)")
 	flag.Parse()
+
+	if *seedFlag == "" {
+		panic("Please specify a seed URL with -seed=<url>")
+	}
 
 	var indexType IndexType
 	switch *indexFlag {
@@ -71,7 +77,7 @@ func main() {
 		panic("Please specify a valid index with -index=inmem or -index=sqlite")
 	}
 
-	startServer(indexType, *fastFlag)
+	startServer(*seedFlag, indexType, *fastFlag)
 	for {
 		time.Sleep(100 * time.Millisecond)
 	}

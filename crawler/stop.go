@@ -1,4 +1,4 @@
-package main
+package crawler
 
 type Stopper struct {
 	words map[string]struct{}

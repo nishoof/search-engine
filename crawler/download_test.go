@@ -1,22 +1,25 @@
-package main
+package crawler
 
 import (
 	"bufio"
 	"os"
 	"strings"
 	"testing"
+
+	"github.com/nishoof/search-engine/testutils"
 )
 
 func TestDownload(t *testing.T) {
 	tests := []struct {
 		path string
 	}{
-		{simpleTestdataPaths[1]},
-		{simpleTestdataPaths[0]},
-		{simpleTestdataPaths[2]},
+		{testutils.SimpleTestdataPaths[1]},
+		{testutils.SimpleTestdataPaths[0]},
+		{testutils.SimpleTestdataPaths[2]},
 	}
 
-	tsURL := getSimpleTestServer().URL
+	ts := testutils.NewSimpleTestServer()
+	defer ts.Close()
 
 	for testIdx, test := range tests {
 		want, err := loadFileAsLines(test.path)
@@ -24,7 +27,7 @@ func TestDownload(t *testing.T) {
 			t.Fatalf("Unable to load test data for test %d: %v", testIdx, err)
 		}
 
-		got := download(tsURL + "/" + test.path)
+		got := download(ts.URL + "/" + test.path)
 
 		// Read through the downloaded content line by line with a scanner and compare it to expected
 		scanner := bufio.NewScanner(got)
@@ -39,7 +42,7 @@ func TestDownload(t *testing.T) {
 }
 
 func loadFileAsLines(path string) ([]string, error) {
-	f, err := os.Open(path)
+	f, err := os.Open(testutils.Root() + "/" + path)
 	if err != nil {
 		return nil, err
 	}

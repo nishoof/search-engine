@@ -7,6 +7,7 @@ import (
 	"net/http"
 	"time"
 
+	"github.com/nishoof/search-engine/crawler"
 	"github.com/nishoof/search-engine/index"
 )
 
@@ -19,7 +20,7 @@ func startServer(seed string, indexType index.IndexType, fastMode bool) index.In
 		sqliteIdx := index.NewIndexSQLite()
 		idx = &sqliteIdx
 	}
-	crawl(seed, fastMode, &idx)
+	crawler.Crawl(seed, fastMode, &idx)
 
 	fmt.Println("Done\nhttp://localhost:8080/")
 

@@ -1,4 +1,4 @@
-package main
+package crawler
 
 import (
 	"bufio"
@@ -149,8 +149,8 @@ func telemetry(telemetryDoneCh chan bool, visitedSet map[string]struct{}, ch1 ch
 	fmt.Println("Telemetry ended")
 }
 
-/* Crawls the website starting from the given seed URL, then crawling all links found on that page, and so on for links found on those pages. fastMode ignores crawl-delay and prints less. If idx is not nil, crawl will also build the index using the index's Increment method */
-func crawl(seed string, fastMode bool, idx *index.Index) {
+/* Crawls the website starting from the given seed URL, then crawling all links found on that page, and so on for links found on those pages. fastMode ignores Crawl-delay and prints less. If idx is not nil, Crawl will also build the index using the index's Increment method */
+func Crawl(seed string, fastMode bool, idx *index.Index) {
 	startTime := time.Now()
 
 	visitedSet := make(map[string]struct{})

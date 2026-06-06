@@ -1,6 +1,6 @@
 package main
 
-import index "github.com/nishoof/search-engine/index"
+import "github.com/nishoof/search-engine/index"
 
 func tf(word, doc string, numWordsInDoc int, idx index.Index) float64 {
 	if numWordsInDoc == 0 {

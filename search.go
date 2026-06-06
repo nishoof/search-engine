@@ -5,7 +5,7 @@ import (
 	"sort"
 
 	"github.com/kljensen/snowball"
-	index "github.com/nishoof/search-engine/index"
+	"github.com/nishoof/search-engine/index"
 )
 
 type Result struct {

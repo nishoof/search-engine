@@ -1,4 +1,4 @@
-package main
+package crawler
 
 import (
 	"bufio"
@@ -6,6 +6,8 @@ import (
 	"os"
 	"reflect"
 	"testing"
+
+	"github.com/nishoof/search-engine/testutils"
 )
 
 func TestExtract(t *testing.T) {
@@ -15,13 +17,13 @@ func TestExtract(t *testing.T) {
 		wantHrefs []string
 		wantTitle string
 	}{
-		{simpleTestdataPaths[1], map[string]int{"272": 1, "link": 1}, []string{}, ""},
-		{simpleTestdataPaths[2], map[string]int{"simpl": 2}, []string{"/testdata/simple/simple.html"}, ""},
-		{simpleTestdataPaths[3], map[string]int{"style": 1, "blue": 1, "link": 2, "href": 1, "red": 1, "simpl": 1}, []string{"/testdata/simple/href.html", "/testdata/simple/simple.html"}, "Style"},
+		{testutils.SimpleTestdataPaths[1], map[string]int{"272": 1, "link": 1}, []string{}, ""},
+		{testutils.SimpleTestdataPaths[2], map[string]int{"simpl": 2}, []string{"/testdata/simple/simple.html"}, ""},
+		{testutils.SimpleTestdataPaths[3], map[string]int{"style": 1, "blue": 1, "link": 2, "href": 1, "red": 1, "simpl": 1}, []string{"/testdata/simple/href.html", "/testdata/simple/simple.html"}, "Style"},
 	}
 
 	for testIdx, test := range tests {
-		content, err := os.ReadFile(test.filepath)
+		content, err := os.ReadFile(testutils.Root() + "/" + test.filepath)
 		if err != nil {
 			t.Fatalf("Unable to load test data for test %d: %v", testIdx, err)
 		}

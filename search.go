@@ -5,6 +5,7 @@ import (
 	"sort"
 
 	"github.com/kljensen/snowball"
+	index "github.com/nishoof/search-engine/index"
 )
 
 type Result struct {
@@ -16,7 +17,7 @@ type Result struct {
 
 type Results []Result
 
-func Search(word string, idx Index) Results {
+func Search(word string, idx index.Index) Results {
 	// Stem the search word
 	word, err := snowball.Stem(word, "english", true)
 	if err != nil {

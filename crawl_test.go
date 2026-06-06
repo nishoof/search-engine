@@ -2,13 +2,15 @@ package main
 
 import (
 	"testing"
+
+	"github.com/nishoof/search-engine/index"
 )
 
 func TestCrawl(t *testing.T) {
 	tsURL := simpleTestServer.URL
 
 	seed := tsURL + "/" + simpleTestdataPaths[0]
-	var idx Index = NewIndexInMemory()
+	var idx index.Index = index.NewIndexInMemory()
 	crawl(seed, true, &idx)
 
 	tests := []struct {

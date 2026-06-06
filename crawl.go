@@ -7,6 +7,8 @@ import (
 	"net/url"
 	"sync"
 	"time"
+
+	"github.com/nishoof/search-engine/index"
 )
 
 type Downloaded struct {
@@ -99,7 +101,7 @@ func extractor(bodyCh chan Downloaded, pageCh chan Extracted, dirtyUrlCh chan st
 	fmt.Println("Extractor ended")
 }
 
-func builder(pageCh chan Extracted, idx *Index, wg *sync.WaitGroup, inProgCh chan bool) {
+func builder(pageCh chan Extracted, idx *index.Index, wg *sync.WaitGroup, inProgCh chan bool) {
 	fmt.Println("Builder started")
 
 	for page := range pageCh {
@@ -148,7 +150,7 @@ func telemetry(telemetryDoneCh chan bool, visitedSet map[string]struct{}, ch1 ch
 }
 
 /* Crawls the website starting from the given seed URL, then crawling all links found on that page, and so on for links found on those pages. fastMode ignores crawl-delay and prints less. If idx is not nil, crawl will also build the index using the index's Increment method */
-func crawl(seed string, fastMode bool, idx *Index) {
+func crawl(seed string, fastMode bool, idx *index.Index) {
 	startTime := time.Now()
 
 	visitedSet := make(map[string]struct{})

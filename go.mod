@@ -1,4 +1,4 @@
-module search-engine
+module github.com/nishoof/search-engine
 
 go 1.25.0
 

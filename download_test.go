@@ -11,8 +11,8 @@ func TestDownload(t *testing.T) {
 	tests := []struct {
 		path string
 	}{
-		{simpleTestdataPaths[0]},
 		{simpleTestdataPaths[1]},
+		{simpleTestdataPaths[0]},
 		{simpleTestdataPaths[2]},
 	}
 

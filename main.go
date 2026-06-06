@@ -6,18 +6,22 @@ import (
 	"html/template"
 	"net/http"
 	"time"
+
+	"github.com/nishoof/search-engine/crawler"
+	"github.com/nishoof/search-engine/index"
+	"github.com/nishoof/search-engine/searcher"
 )
 
-func startServer(seed string, indexType IndexType, fastMode bool) Index {
+func startServer(seed string, indexType index.IndexType, fastMode bool) index.Index {
 	fmt.Println("Crawling and building index...")
-	var idx Index
-	if indexType == IN_MEM {
-		idx = NewIndexInMemory()
+	var idx index.Index
+	if indexType == index.IN_MEM {
+		idx = index.NewIndexInMemory()
 	} else {
-		sqliteIdx := NewIndexSQLite()
+		sqliteIdx := index.NewIndexSQLite()
 		idx = &sqliteIdx
 	}
-	crawl(seed, fastMode, &idx)
+	crawler.Crawl(seed, fastMode, &idx)
 
 	fmt.Println("Done\nhttp://localhost:8080/")
 
@@ -29,7 +33,7 @@ func startServer(seed string, indexType IndexType, fastMode bool) Index {
 	// Handle requests to /search (show the search results)
 	http.HandleFunc("/search", func(w http.ResponseWriter, r *http.Request) {
 		q := r.URL.Query().Get("q")
-		results := Search(q, idx)
+		results := searcher.Search(q, idx)
 
 		t, err := template.ParseFiles("./templates/results.html")
 		if err != nil {
@@ -40,7 +44,7 @@ func startServer(seed string, indexType IndexType, fastMode bool) Index {
 
 		templateData := struct {
 			Query   string
-			Results []Result
+			Results []searcher.Result
 		}{
 			Query:   q,
 			Results: results,
@@ -67,12 +71,12 @@ func main() {
 		panic("Please specify a seed URL with -seed=<url>")
 	}
 
-	var indexType IndexType
+	var indexType index.IndexType
 	switch *indexFlag {
 	case "inmem":
-		indexType = IN_MEM
+		indexType = index.IN_MEM
 	case "sqlite":
-		indexType = SQLITE
+		indexType = index.SQLITE
 	default:
 		panic("Please specify a valid index with -index=inmem or -index=sqlite")
 	}

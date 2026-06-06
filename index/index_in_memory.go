@@ -1,4 +1,4 @@
-package main
+package index
 
 type IndexInMemory struct {
 	frequency      map[string]map[string]int // maps words to their FrequencyMap

@@ -9,6 +9,7 @@ import (
 
 	"github.com/nishoof/search-engine/crawler"
 	"github.com/nishoof/search-engine/index"
+	"github.com/nishoof/search-engine/searcher"
 )
 
 func startServer(seed string, indexType index.IndexType, fastMode bool) index.Index {
@@ -32,7 +33,7 @@ func startServer(seed string, indexType index.IndexType, fastMode bool) index.In
 	// Handle requests to /search (show the search results)
 	http.HandleFunc("/search", func(w http.ResponseWriter, r *http.Request) {
 		q := r.URL.Query().Get("q")
-		results := Search(q, idx)
+		results := searcher.Search(q, idx)
 
 		t, err := template.ParseFiles("./templates/results.html")
 		if err != nil {
@@ -43,7 +44,7 @@ func startServer(seed string, indexType index.IndexType, fastMode bool) index.In
 
 		templateData := struct {
 			Query   string
-			Results []Result
+			Results []searcher.Result
 		}{
 			Query:   q,
 			Results: results,

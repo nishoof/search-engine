@@ -1,8 +1,20 @@
-package main
+package searcher
 
-import "testing"
+import (
+	"testing"
+
+	"github.com/nishoof/search-engine/crawler"
+	"github.com/nishoof/search-engine/index"
+	"github.com/nishoof/search-engine/testutils"
+)
 
 func TestSearch(t *testing.T) {
+	top10TestServer := testutils.NewTop10TestServer()
+	defer top10TestServer.Close()
+
+	var idx index.Index = index.NewIndexInMemory()
+	crawler.Crawl(top10TestServer.URL+"/top10", true, &idx)
+
 	const romeoTitle = "The Project Gutenberg eBook of Romeo and Juliet, by William Shakespeare"
 	const dorianTitle = "The Project Gutenberg eBook of The Picture of Dorian Gray, by Oscar Wilde"
 	base := top10TestServer.URL
@@ -58,13 +70,13 @@ func TestSearch(t *testing.T) {
 			t.Errorf("Test %d: Got %d results but wanted %d\n", testIdx, len(got), len(test.want))
 		}
 
-		// Convert the wanted Result slice to a Result set
+		// Convert the slice of wanted Results to a set of wanted Results
 		wantSet := make(map[Result]struct{})
 		for _, result := range test.want {
 			wantSet[result] = struct{}{}
 		}
 
-		// Make sure each result is in the wanted set
+		// Make sure each result we got is in the set of wanted Results
 		for _, result := range got {
 			_, exists := wantSet[result]
 			if !exists {

@@ -45,7 +45,7 @@ func sleeper(requestCh chan bool, readyCh chan bool, rules *RobotsRules) {
 	}
 }
 
-func downloader(downloadableUrlCh chan string, bodyCh chan Downloaded, requestCh chan bool, readyCh chan bool) {
+func downloader(downloadableUrlCh chan string, bodyCh chan Downloaded, requestCh chan bool, readyCh chan bool, wg *sync.WaitGroup) {
 	for url := range downloadableUrlCh {
 		<-readyCh
 		slog.Debug("Downloading", "url", url)
@@ -53,6 +53,7 @@ func downloader(downloadableUrlCh chan string, bodyCh chan Downloaded, requestCh
 		requestCh <- true
 
 		if body == nil {
+			wg.Done()
 			continue
 		}
 		bodyCh <- Downloaded{url, body}
@@ -137,7 +138,7 @@ func Crawl(seed string, fastMode bool, idx *index.Index) {
 	go manager(urlCh, downloadableUrlCh, visitedSet, rules, &wg)
 	go sleeper(requestCh, readyCh, rules)
 	for i := 0; i < 1000; i++ {
-		go downloader(downloadableUrlCh, bodyCh, requestCh, readyCh)
+		go downloader(downloadableUrlCh, bodyCh, requestCh, readyCh, &wg)
 	}
 	go extractor(bodyCh, pageCh, dirtyUrlCh)
 	go builder(pageCh, idx, &wg)

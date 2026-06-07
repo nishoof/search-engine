@@ -1,8 +1,8 @@
 package crawler
 
 import (
-	"fmt"
 	"io"
+	"log/slog"
 	"net/http"
 )
 
@@ -10,7 +10,7 @@ import (
 func download(url string) io.ReadCloser {
 	resp, err := http.Get(url)
 	if err != nil {
-		fmt.Printf("Error downloading %q: %v\n", url, err)
+		slog.Error("Error downloading", "url", url, "error", err)
 		return nil
 	}
 	return resp.Body

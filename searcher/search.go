@@ -1,7 +1,7 @@
 package searcher
 
 import (
-	"fmt"
+	"log/slog"
 	"sort"
 
 	"github.com/kljensen/snowball"
@@ -21,7 +21,7 @@ func Search(word string, idx index.Index) Results {
 	// Stem the search word
 	word, err := snowball.Stem(word, "english", true)
 	if err != nil {
-		fmt.Println("Error stemming word:", err)
+		slog.Error("Error stemming word", "word", word, "error", err)
 		return nil
 	}
 

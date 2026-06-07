@@ -2,8 +2,8 @@ package crawler
 
 import (
 	"bufio"
-	"fmt"
 	"io"
+	"log/slog"
 	"net/url"
 	"sync"
 	"time"
@@ -22,9 +22,7 @@ type Extracted struct {
 	title string
 }
 
-func manager(urlCh chan string, downloadableUrlCh chan string, visitedSet map[string]struct{}, rules *RobotsRules, fastMode bool, wg *sync.WaitGroup, inProgCh chan bool) {
-	fmt.Println("Manager started")
-
+func manager(urlCh chan string, downloadableUrlCh chan string, visitedSet map[string]struct{}, rules *RobotsRules, wg *sync.WaitGroup) {
 	for url := range urlCh {
 		_, visited := visitedSet[url]
 		if visited {
@@ -36,33 +34,21 @@ func manager(urlCh chan string, downloadableUrlCh chan string, visitedSet map[st
 			wg.Done()
 			continue
 		}
-		inProgCh <- true
-		if !fastMode {
-			fmt.Printf("crawling %s\n", url)
-		}
 		downloadableUrlCh <- url
 	}
-
-	fmt.Println("Manager ended")
 }
 
 func sleeper(requestCh chan bool, readyCh chan bool, rules *RobotsRules) {
-	fmt.Println("Sleeper started")
-
 	for range requestCh {
 		time.Sleep(rules.crawlDelay)
 		readyCh <- true
 	}
-
-	fmt.Println("Sleeper ended")
 }
 
 func downloader(downloadableUrlCh chan string, bodyCh chan Downloaded, requestCh chan bool, readyCh chan bool) {
-	fmt.Println("Downloader started")
-
 	for url := range downloadableUrlCh {
 		<-readyCh
-		// fmt.Printf("Downloader: Downloading %s\n", url)
+		slog.Debug("Downloading", "url", url)
 		body := download(url)
 		requestCh <- true
 
@@ -71,13 +57,9 @@ func downloader(downloadableUrlCh chan string, bodyCh chan Downloaded, requestCh
 		}
 		bodyCh <- Downloaded{url, body}
 	}
-
-	fmt.Println("Downloader ended")
 }
 
 func extractor(bodyCh chan Downloaded, pageCh chan Extracted, dirtyUrlCh chan string) {
-	fmt.Println("Extractor started")
-
 	stopper := NewStopper()
 
 	for downloaded := range bodyCh {
@@ -97,17 +79,12 @@ func extractor(bodyCh chan Downloaded, pageCh chan Extracted, dirtyUrlCh chan st
 			dirtyUrlCh <- href
 		}
 	}
-
-	fmt.Println("Extractor ended")
 }
 
-func builder(pageCh chan Extracted, idx *index.Index, wg *sync.WaitGroup, inProgCh chan bool) {
-	fmt.Println("Builder started")
-
+func builder(pageCh chan Extracted, idx *index.Index, wg *sync.WaitGroup) {
 	for page := range pageCh {
 		if idx == nil {
 			wg.Done()
-			<-inProgCh
 			continue
 		}
 		(*idx).AddDoc(page.url, page.title)
@@ -115,15 +92,10 @@ func builder(pageCh chan Extracted, idx *index.Index, wg *sync.WaitGroup, inProg
 			(*idx).Increment(word, page.url, count)
 		}
 		wg.Done()
-		<-inProgCh
 	}
-
-	fmt.Println("Builder ended")
 }
 
 func adder(dirtyUrlCh chan string, urlCh chan string, host string, wg *sync.WaitGroup) {
-	fmt.Println("Adder started")
-
 	for dirtyUrl := range dirtyUrlCh {
 		url := cleanHref(host, dirtyUrl)
 		if extractHost(url) == host {
@@ -131,28 +103,10 @@ func adder(dirtyUrlCh chan string, urlCh chan string, host string, wg *sync.Wait
 			wg.Add(1)
 		}
 	}
-
-	fmt.Println("Adder ended")
 }
 
-func telemetry(telemetryDoneCh chan bool, visitedSet map[string]struct{}, ch1 chan string, ch2 chan string, ch3 chan Downloaded, ch4 chan Extracted, ch5 chan string, inProfCh chan bool) {
-	fmt.Println("Telemetry started")
-
-	for {
-		fmt.Printf("TELEMETRY: %d visited, channels: %d %d %d %d %d. in progress: %d\n", len(visitedSet), len(ch1), len(ch2), len(ch3), len(ch4), len(ch5), len(inProfCh))
-		if len(telemetryDoneCh) > 0 {
-			break
-		}
-		time.Sleep(1 * time.Second)
-	}
-
-	fmt.Println("Telemetry ended")
-}
-
-/* Crawls the website starting from the given seed URL, then crawling all links found on that page, and so on for links found on those pages. fastMode ignores Crawl-delay and prints less. If idx is not nil, Crawl will also build the index using the index's Increment method */
+/* Crawls the website starting from the given seed URL, then crawling all links found on that page, and so on for links found on those pages. fastMode ignores Crawl-delay. If idx is not nil, Crawl will also build the index using the index's Increment method */
 func Crawl(seed string, fastMode bool, idx *index.Index) {
-	startTime := time.Now()
-
 	visitedSet := make(map[string]struct{})
 	host := extractHost(seed)
 	if host == "" {
@@ -179,16 +133,14 @@ func Crawl(seed string, fastMode bool, idx *index.Index) {
 	bodyCh := make(chan Downloaded, 10000)
 	pageCh := make(chan Extracted, 10000)
 	dirtyUrlCh := make(chan string, 10000)
-	inProgCh := make(chan bool, 100000)
 
-	go telemetry(telemetryDoneCh, visitedSet, urlCh, downloadableUrlCh, bodyCh, pageCh, dirtyUrlCh, inProgCh)
-	go manager(urlCh, downloadableUrlCh, visitedSet, rules, fastMode, &wg, inProgCh)
+	go manager(urlCh, downloadableUrlCh, visitedSet, rules, &wg)
 	go sleeper(requestCh, readyCh, rules)
 	for i := 0; i < 1000; i++ {
 		go downloader(downloadableUrlCh, bodyCh, requestCh, readyCh)
 	}
 	go extractor(bodyCh, pageCh, dirtyUrlCh)
-	go builder(pageCh, idx, &wg, inProgCh)
+	go builder(pageCh, idx, &wg)
 	go adder(dirtyUrlCh, urlCh, host, &wg)
 
 	urlCh <- seed
@@ -199,11 +151,6 @@ func Crawl(seed string, fastMode bool, idx *index.Index) {
 		(*idx).Flush()
 	}
 
-	endTime := time.Now()
-	duration := endTime.Sub(startTime).Seconds()
-	numUrls := len(visitedSet)
-	fmt.Printf("crawled %d urls in %.2f seconds (%.2f per second)\n", numUrls, duration, (float64)(numUrls)/duration)
-
 	telemetryDoneCh <- true
 	close(telemetryDoneCh)
 	close(urlCh)
@@ -212,14 +159,13 @@ func Crawl(seed string, fastMode bool, idx *index.Index) {
 	close(bodyCh)
 	close(pageCh)
 	close(dirtyUrlCh)
-	close(inProgCh)
 }
 
 /* Extracts the host from the given href */
 func extractHost(href string) string {
 	u, err := url.Parse(href)
 	if err != nil {
-		fmt.Printf("Error parsing href %q: %v\n", href, err)
+		slog.Error("Error parsing href", "href", href, "error", err)
 		return ""
 	}
 	u.Path = "/"

@@ -2,7 +2,7 @@ package crawler
 
 import (
 	"bufio"
-	"fmt"
+	"log/slog"
 	"strings"
 	"unicode"
 
@@ -15,7 +15,7 @@ import (
 func extract(reader *bufio.Reader, stopper *Stopper) (map[string]int, []string, string) {
 	tree, err := html.Parse(reader)
 	if err != nil {
-		fmt.Printf("Error parsing HTML: %v\n", err)
+		slog.Error("Error parsing HTML", "error", err)
 		return nil, nil, ""
 	}
 

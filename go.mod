@@ -7,3 +7,5 @@ require golang.org/x/net v0.43.0
 require github.com/kljensen/snowball v0.10.0
 
 require github.com/mattn/go-sqlite3 v1.14.32
+
+require github.com/lmittmann/tint v1.1.3

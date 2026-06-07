@@ -1,7 +1,7 @@
 package crawler
 
 import (
-	"fmt"
+	"log/slog"
 	"net/url"
 )
 
@@ -9,12 +9,12 @@ import (
 func cleanHref(base string, href string) string {
 	b, err := url.Parse(base)
 	if err != nil {
-		fmt.Printf("Error parsing base URL %q: %v\n", base, err)
+		slog.Error("Error parsing base URL", "url", base, "error", err)
 		return ""
 	}
 	u, err := url.Parse(href)
 	if err != nil {
-		fmt.Printf("Error parsing href URL %q: %v\n", href, err)
+		slog.Error("Error parsing href URL", "url", href, "error", err)
 		return ""
 	}
 	cleaned := b.ResolveReference(u)

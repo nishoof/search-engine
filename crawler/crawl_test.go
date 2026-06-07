@@ -1,7 +1,6 @@
 package crawler
 
 import (
-	"fmt"
 	"testing"
 
 	"github.com/nishoof/search-engine/index"
@@ -14,9 +13,7 @@ func TestCrawl(t *testing.T) {
 
 	seed := ts.URL + "/" + testutils.SimpleTestdataPaths[0]
 	var idx index.Index = index.NewIndexInMemory()
-	fmt.Printf("Crawling %s\n", seed)
 	Crawl(seed, true, &idx)
-	fmt.Printf("Crawled %s\n", seed)
 
 	tests := []struct {
 		word string

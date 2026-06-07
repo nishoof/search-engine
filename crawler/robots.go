@@ -5,7 +5,6 @@ package crawler
 import (
 	"bufio"
 	"log/slog"
-	"net/http"
 	"regexp"
 	"strconv"
 	"strings"
@@ -39,20 +38,11 @@ func parseRobotsTxt(robotsTxtUrl string) *RobotsRules {
 	rules := new(RobotsRules)
 	rules.SetCrawlDelay(0.5) // default crawl delay of 0.5 seconds (at most 2 requests per second)
 
-	// try do download robots.txt
-	resp, err := http.Get(robotsTxtUrl)
-	if err != nil {
-		slog.Error("Error downloading robots.txt", "url", robotsTxtUrl, "error", err)
-		// os.Exit(1)	// todo
-		return rules
-	}
-	if resp.StatusCode == 404 {
-		slog.Warn("robots.txt not found, using default rules", "url", robotsTxtUrl)
-		return rules
-	}
-	body := resp.Body
+	// download robots.txt
+	body := download(robotsTxtUrl)
 	if body == nil {
-		panic("unable to download " + robotsTxtUrl)
+		slog.Info("robots.txt not found, using default rules")
+		return rules
 	}
 	defer body.Close()
 
@@ -111,7 +101,7 @@ func parseRobotsTxtLine(line string, rules *RobotsRules, applies *bool) {
 		}
 		rules.SetCrawlDelay(delaySeconds)
 	default:
-		slog.Warn("Skipping unsupported robots.txt line", "line", line)
+		slog.Debug("Skipping unsupported robots.txt line", "line", line)
 	}
 }
 
